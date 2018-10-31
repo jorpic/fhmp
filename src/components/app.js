@@ -1,6 +1,7 @@
 import { h, Component } from 'preact';
 import { Router } from 'preact-router';
 
+import Spinner from './Spinner';
 import SignIn from './SignIn';
 import Header from './header';
 import Home from '../routes/home';
@@ -10,6 +11,9 @@ import NotFound from '../routes/404';
 export default class App extends Component {
   constructor(props) {
     super(props);
+    this.state = {
+      signIn: 'checking'
+    };
     SignIn.check()
       .then(result => {
         const signed = result && result.user;
@@ -36,7 +40,9 @@ export default class App extends Component {
             selectedRoute={this.state.currentUrl}
             message={this.state.signIn}
         />
-        {this.state.signIn !== 'signed'
+        {this.state.signIn === 'checking'
+          ? <Spinner />
+          : this.state.signIn !== 'signed'
           ? <SignIn />
           : (
             <Router onChange={this.handleRoute}>
