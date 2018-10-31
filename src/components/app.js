@@ -14,12 +14,14 @@ export default class App extends Component {
     this.state = {
       signIn: 'checking'
     };
+  }
+
+  componentDidMount() {
     SignIn.check()
-      .then(result => {
-        const signed = result && result.user;
+      .then(user => {
         this.setState({
-          user: signed ? result.user : null,
-          signIn: signed ? "signed" : "not signed"
+          user,
+          signIn: user ? "signed" : "not signed"
         });
       })
       .catch(() => this.setState({signIn: 'failed'}));

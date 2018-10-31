@@ -9,7 +9,9 @@ import { auth, googleAuthProvider } from '../../firebase';
 export default class SignIn extends Component {
   // returns promise with `{user}` as a result.
   static check() {
-    return auth.getRedirectResult();
+    return new Promise(function(resolve, reject) {
+      auth.onAuthStateChanged(resolve);
+    });
   }
 
 
