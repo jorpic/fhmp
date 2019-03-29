@@ -12,14 +12,19 @@ export class Tabs extends Component {
   render() {
     const mkTab = (tab, i) => (
       <li onClick={() => this.setState({active: i})}
-          className={cls({"is-active": this.state.active == i})}>
-        <a>{tab.attributes.name}</a>
+          class={cls({"is-active": this.state.active == i})}>
+        <a>
+          {tab.attributes.icon
+            ? <span class="icon"><i class={tab.attributes.icon}/></span>
+            : ""}
+          {tab.attributes.name}
+        </a>
       </li>);
     const { children } = this.props;
 
     return (
-      <div className="tabs-wrapper">
-        <div className="tabs is-centered">
+      <div class="tabs-wrapper">
+        <div class="tabs is-centered">
           <ul>
             {children.map(mkTab)}
           </ul>

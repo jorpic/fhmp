@@ -2,6 +2,9 @@ import "../style";
 import "bulma/css/bulma.css";
 import { h, Component } from "preact";
 
+import "@fortawesome/fontawesome-free/css/solid";
+import "@fortawesome/fontawesome-free/css/fontawesome";
+
 import {Tab, Tabs} from "./Tabs";
 
 export default class App extends Component {
@@ -23,14 +26,17 @@ export default class App extends Component {
       <div class="section">
         <div class="container">
           <Tabs>
-            <Tab name="New">
+            <Tab icon="fas fa-bong" name="New">
               <textarea class="textarea"
                 ref={ref => this.textarea = ref}
                 onChange={this.onText}
                 value={this.state.text}/>
             </Tab>
-            <Tab name="List">
+            <Tab icon="fas fa-list" name="List">
               List
+            </Tab>
+            <Tab icon="fas fa-cog">
+              Config
             </Tab>
           </Tabs>
         </div>
