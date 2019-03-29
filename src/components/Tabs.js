@@ -9,9 +9,14 @@ export class Tabs extends Component {
     };
   }
 
+  setActive = (tab, i) => () => {
+    tab.attributes.onActive && tab.attributes.onActive();
+    this.setState({active: i});
+  }
+
   render() {
     const mkTab = (tab, i) => (
-      <li onClick={() => this.setState({active: i})}
+      <li onClick={this.setActive(tab, i)}
           class={cls({"is-active": this.state.active == i})}>
         <a>
           {tab.attributes.icon
