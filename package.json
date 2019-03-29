@@ -29,10 +29,8 @@
     "preact-cli": "^2.0.0"
   },
   "dependencies": {
-    "firebase": "^5.5.5",
-    "preact": "^8.2.1",
-    "preact-compat": "^3.17.0",
-    "preact-material-components": "^1.4.3",
-    "preact-router": "^2.5.5"
+    "bulma": "^0.7.4",
+    "classnames": "^2.2.6",
+    "preact": "^8.4.2"
   }
 }

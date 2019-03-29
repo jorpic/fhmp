@@ -1,60 +1,39 @@
-import { h, Component } from 'preact';
-import { Router } from 'preact-router';
+import "../style";
+import "bulma/css/bulma.css";
+import { h, Component } from "preact";
 
-import Spinner from './Spinner';
-import SignIn from './SignIn';
-import Header from './header';
-import Home from '../routes/home';
-import Profile from '../routes/profile';
-import NotFound from '../routes/404';
+import {Tab, Tabs} from "./Tabs";
 
 export default class App extends Component {
   constructor(props) {
     super(props);
     this.state = {
-      signIn: 'checking'
+      text: "hello"
     };
   }
 
   componentDidMount() {
-    SignIn.check()
-      .then(user => {
-        this.setState({
-          user,
-          signIn: user ? "signed" : "not signed"
-        });
-      })
-      .catch(() => this.setState({signIn: 'failed'}));
+    this.textarea && this.textarea.focus();
   }
 
-
-  handleRoute = e => {
-    this.setState({
-      currentUrl: e.url
-    });
-  };
-
+  onText = ev => this.setState({text: ev.target.value})
 
   render() {
     return (
-      <div id="app">
-        <Header
-            selectedRoute={this.state.currentUrl}
-            message={this.state.signIn}
-        />
-        {this.state.signIn === 'checking'
-          ? <Spinner />
-          : this.state.signIn !== 'signed'
-          ? <SignIn />
-          : (
-            <Router onChange={this.handleRoute}>
-              <Home path="/" />
-              <Profile path="/profile/" user="me" />
-              <Profile path="/profile/:user" />
-              <NotFound default />
-            </Router>
-          )
-        }
+      <div class="section">
+        <div class="container">
+          <Tabs>
+            <Tab name="New">
+              <textarea class="textarea"
+                ref={ref => this.textarea = ref}
+                onChange={this.onText}
+                value={this.state.text}/>
+            </Tab>
+            <Tab name="List">
+              List
+            </Tab>
+          </Tabs>
+        </div>
       </div>
     );
   }
