@@ -6,7 +6,8 @@ import cls from "classnames";
 
 import { h, Component } from "preact";
 import Dexie from "dexie";
-import {Tab, Tabs} from "./Tabs";
+import { Tab, Tabs } from "./Tabs";
+import Review from "./Review";
 
 
 export default class App extends Component {
@@ -35,6 +36,7 @@ export default class App extends Component {
   }
 
   onText = ev => this.setState({text: ev.target.value})
+
   saveText = () => {
     const createTime = new Date().toISOString();
     this.db.Notes.add({createTime, text: this.state.text})
@@ -45,6 +47,13 @@ export default class App extends Component {
     this.db.Notes.toArray()
       .then(notes => this.setState({listUpdated: false, notes}));
   }
+
+  getRandomNote = () => this.db.Notes.toArray()
+    .then(ns => {
+      const i = Math.floor(ns.length * Math.random());
+      return Promise.resolve(ns[i]);
+    })
+
 
   render() {
     return (
@@ -70,6 +79,9 @@ export default class App extends Component {
               name="List"
               onActive={this.refreshList}>
               {this.state.notes.map(n => <p>{JSON.stringify(n)}</p>)}
+            </Tab>
+            <Tab icon="fas fa-seedling" name="Review">
+              <Review getNote={this.getRandomNote} updNote={this.updateNote}/>
             </Tab>
             <Tab icon="fas fa-cog">
               Config
