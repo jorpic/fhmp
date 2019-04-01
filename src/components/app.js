@@ -27,7 +27,7 @@ export default class App extends Component {
     });
     db.Notes.hook("creating", () => {
       this.setState({listUpdated: true});
-      // NB. must return undefined here, otherwise return value will be used
+      // NB. must return `undefined` here, otherwise return value will be used
       // as a primary key for new object.
     });
     db.open();

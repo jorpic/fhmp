@@ -4,7 +4,6 @@
   "version": "0.0.0",
   "license": "MIT",
   "scripts": {
-    "start": "if-env NODE_ENV=production && npm run -s serve || npm run -s dev",
     "build": "preact build",
     "serve": "preact build && preact serve",
     "dev": "preact watch",
@@ -26,8 +25,7 @@
     "@fortawesome/fontawesome-free": "^5.8.1",
     "eslint": "^4.5.0",
     "eslint-config-synacor": "^1.1.0",
-    "if-env": "^1.0.0",
-    "preact-cli": "^2.0.0"
+    "preact-cli": "^3.0.0-mnext.19"
   },
   "dependencies": {
     "bulma": "^0.7.4",
