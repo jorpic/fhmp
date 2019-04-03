@@ -2,6 +2,8 @@ import { h, Component } from "preact";
 import Markdown from "preact-markdown";
 
 
+// TODO: gently handle "unable to save review" (this is not a critical error)
+
 export default class Review extends Component {
   constructor(props) {
     super(props);
@@ -17,14 +19,17 @@ export default class Review extends Component {
   showAnswer = () => this.setState({isAnswerVisible: true})
 
   skip = () => this.props.getNote()
-    .then(n => this.setState({
-      noteId: n.id,
-      question: n.text,
-      answer: n.createTime,
-      isAnswerVisible: false,
-    }))
+    .then(n => {
+      const [question, answer] = n.text.split(/\n-{4,}\n/);
+      return this.setState({
+        noteId: n.id,
+        question,
+        answer,
+        isAnswerVisible: false,
+      })
+    })
   soon = () => {
-    this.props.updNote({}); // this.state.noteId, {reviewTimestamp.push(now), result: -1});
+    this.props.updateNote({}); // this.state.noteId, {reviewTimestamp.push(now), result: -1});
     this.skip();
   }
   later = () => this.soon()

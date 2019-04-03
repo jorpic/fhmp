@@ -20,8 +20,7 @@ export default class Create extends Component {
 
   onSave = () => {
     const { text } = this.state;
-    console.log("new note", text);
-    this.props.onSave({text})
+    this.props.onSave(text)
       .then(() => this.setState({text: ""}))
       .catch(error => this.setState({error}))
   }
@@ -42,7 +41,7 @@ export default class Create extends Component {
           <button class="button is-primary"
             disabled={!this.state.text}
             onClick={this.onSave}>
-            Saveaa
+            Save
           </button>
         </div>
       {this.state.error &&
