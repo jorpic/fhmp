@@ -1,4 +1,3 @@
-import cls from "classnames";
 import { h, Component } from "preact";
 import Markdown from "preact-markdown";
 

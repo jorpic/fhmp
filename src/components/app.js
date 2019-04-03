@@ -8,20 +8,21 @@ import { h, Component } from "preact";
 import Dexie from "dexie";
 import { Tab, Tabs } from "./Tabs";
 import Review from "./Review";
+import Create from "./Create";
 
 
 export default class App extends Component {
   constructor(props) {
     super(props);
     this.state = {
-      text: "",
       listUpdated: false,
       notes: []
     };
   }
 
   componentDidMount() {
-    this.textarea && this.textarea.focus();
+    this.createForm && this.createForm.focus();
+
     const db = new Dexie("fhmp");
     db.version(1).stores({
       Notes: "++id,createTime" //, text"
@@ -29,18 +30,10 @@ export default class App extends Component {
     db.Notes.hook("creating", () => {
       this.setState({listUpdated: true});
       // NB. must return `undefined` here, otherwise return value will be used
-      // as a primary key for new object.
+      // as a primary key for a new object.
     });
     db.open();
     this.db = db;
-  }
-
-  onText = ev => this.setState({text: ev.target.value})
-
-  saveText = () => {
-    const createTime = new Date().toISOString();
-    this.db.Notes.add({createTime, text: this.state.text})
-      .then(() => this.setState({text: ""}));
   }
 
   refreshList = () => {
@@ -48,6 +41,7 @@ export default class App extends Component {
       .then(notes => this.setState({listUpdated: false, notes}));
   }
 
+  // FIXME: take oldest 100 by last acess time, select random among them
   getRandomNote = () => this.db.Notes.toArray()
     .then(ns => {
       const i = Math.floor(ns.length * Math.random());
@@ -55,27 +49,35 @@ export default class App extends Component {
     })
 
 
+  // FIXME: extract storage API
+  // - initDB() -> db
+  // - getRandomNote(db) -> note
+  // - getAllNotes(db, tags) -> [note]
+  // - addReview(db, id, review) -> result
+  // - createNote(db) -> id
+  // - editNote(db, id, note) -> result
+  //
+  // handle "unable to save" errors
+  //
+
+  createNote = text => {
+    const createTime = new Date().toISOString();
+    return this.db.Notes.add({createTime, text});
+  }
+
   render() {
+    const { listUpdated } = this.state;
     return (
       <div class="section">
         <div class="container">
           <Tabs>
             <Tab icon="fas fa-bong" name="New">
-              <div class="field">
-                <textarea class="textarea"
-                  ref={ref => this.textarea = ref}
-                  onInput={this.onText}
-                  value={this.state.text}/>
-              </div>
-              <div class="buttons">
-                <button class="button is-primary"
-                  disabled={this.state.text == ""}
-                  onClick={this.saveText}>
-                  Save
-                </button>
-              </div>
+              <Create
+                onSave={this.createNote}
+                ref={ref => this.createForm = ref}/>
             </Tab>
-            <Tab icon={cls("fas fa-list", {"has-text-danger": this.state.listUpdated})}
+            <Tab
+              icon={cls("fas fa-list", {"has-text-danger": listUpdated})}
               name="List"
               onActive={this.refreshList}>
               {this.state.notes.map(n => <p>{JSON.stringify(n)}</p>)}
