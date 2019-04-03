@@ -1,10 +1,16 @@
 import Dexie from "dexie";
 
+const DB_VERSION = 2;
+
 export default class Db {
   constructor() {
     this.idb = new Dexie("fhmp");
     this.idb.version(1).stores({
-      Notes: "++id,createTime"
+      Notes: "++id,createTime",
+    });
+    this.idb.version(DB_VERSION).stores({
+      Notes: "++id,createTime",
+      Drafts: "++id",
     });
     this.idb.open();
   }
@@ -12,7 +18,8 @@ export default class Db {
 
   createNote = text => {
     const createTime = new Date().toISOString();
-    return this.idb.Notes.add({createTime, text});
+    return this.idb.Notes.add({createTime, text})
+      .then(() => this.idb.Drafts.clear());
   }
 
 
@@ -29,6 +36,17 @@ export default class Db {
   getNotes = () => this.idb.Notes.toArray()
 
   updateNode = () => Promise.reject("not implemented")
+
+
+  saveDraft = text => {
+    const Drafts = this.idb.Drafts;
+    return Drafts.toCollection().primaryKeys()
+      .then(keys =>
+        Drafts.add({text})
+          .then(() => Drafts.bulkDelete(keys)));
+  }
+
+  getDraft = () => this.idb.Drafts.toCollection().last()
 
   // - addReview(db, id, review) -> result
   // - editNote(db, id, note) -> result

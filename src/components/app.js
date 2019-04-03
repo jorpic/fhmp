@@ -47,8 +47,7 @@ export default class App extends Component {
         <div class="container">
           <Tabs>
             <Tab icon="fas fa-bong" name="New">
-              <Create
-                onSave={this.db.createNote}
+              <Create db={this.db}
                 ref={ref => this.createForm = ref}/>
             </Tab>
             <Tab
