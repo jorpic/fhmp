@@ -1,7 +1,7 @@
 {
   "name": "fhmp",
   "short_name": "fhmp",
-  "start_url": "/",
+  "start_url": "/fhmp",
   "display": "standalone",
   "orientation": "portrait",
   "background_color": "#fff",
