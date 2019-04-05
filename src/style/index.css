@@ -1,0 +1,4 @@
+/* highlight active item in butder menu */
+.navbar-item.is-active {
+  color: #3273dc !important;
+}

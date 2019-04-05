@@ -37,29 +37,36 @@ export default class Review extends Component {
 
 
   render() {
+    const btn = (text, onClick) =>
+      <a class="navbar-item is-expanded" onClick={onClick}>
+        {text}
+      </a>;
+
     return (
-      <div class="container">
-          <div class="buttons has-addons is-right">
-            <button class="button is-light" onClick={this.skip}>Skip</button>
-            <button class="button is-danger" onClick={this.soon}>Review soon</button>
-            <button class="button is-warning" onClick={this.later}>Review later</button>
-            <button class="button is-success" onClick={this.never}>Review occasionally</button>
+      <div class="section">
+        <div class="content">
+          <Markdown markdown={this.state.question}/>
+        </div>
+        {!this.state.isAnswerVisible &&
+          <div class="field">
+            <button class="button is-light is-fullwidth" onClick={this.showAnswer}>
+              Show
+            </button>
           </div>
+        }
+        {this.state.isAnswerVisible &&
           <div class="content">
-            <Markdown markdown={this.state.question}/>
+            <Markdown markdown={this.state.answer}/>
           </div>
-          {!this.state.isAnswerVisible &&
-            <div class="field">
-              <button class="button is-light is-fullwidth" onClick={this.showAnswer}>
-                Show
-              </button>
-            </div>
-          }
-          {this.state.isAnswerVisible &&
-            <div class="content">
-              <Markdown markdown={this.state.answer}/>
-            </div>
-          }
+        }
+        <nav class="navbar is-light is-fixed-bottom">
+          <div class="navbar-brand">
+            {btn("Skip", this.skip)}
+            {btn("Soon", this.soon)}
+            {btn("Later", this.later)}
+            {btn("Occasinally", this.never)}
+          </div>
+        </nav>
       </div>
     );
   }

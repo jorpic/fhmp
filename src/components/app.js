@@ -5,10 +5,10 @@ import "@fortawesome/fontawesome-free/css/fontawesome";
 import cls from "classnames";
 
 import { h, Component } from "preact";
-import { Tab, Tabs } from "./Tabs";
-import Db from "../lib/Db";
+import { Navbar, NavbarItem } from "./Navbar";
 import Review from "./Review";
 import Create from "./Create";
+import Db from "../lib/Db";
 
 
 
@@ -17,7 +17,8 @@ export default class App extends Component {
     super(props);
     this.state = {
       listUpdated: false,
-      notes: []
+      notes: [],
+      url: "new"
     };
 
     this.db = new Db();
@@ -32,6 +33,10 @@ export default class App extends Component {
       // NB. must return `undefined` here, otherwise return value will be used
       // as a primary key for a new object.
     });
+
+    // Bulma requires this to stick navbar to the top and bottom
+    document.body.classList.add("has-navbar-fixed-top");
+    document.body.classList.add("has-navbar-fixed-bottom");
   }
 
   refreshList = () => {
@@ -39,32 +44,32 @@ export default class App extends Component {
       .then(notes => this.setState({listUpdated: false, notes}));
   }
 
+  onNavigate = url => this.setState({url})
+
 
   render() {
-    const { listUpdated } = this.state;
+    const { menuActive, listUpdated } = this.state;
     return (
-      <div class="section">
+      <div>
+        <Navbar url={this.state.url} onChange={this.onNavigate}>
+          FHMP
+          <NavbarItem url="new" icon="fas fa-bong" text="Add Note"/>
+          <NavbarItem url="list" icon="fas fa-list" text="List"/>
+          <NavbarItem url="review" icon="fas fa-seedling" text="Review"/>
+          <NavbarItem url="config" icon="fas fa-cog" text="Config"/>
+        </Navbar>
         <div class="container">
-          <Tabs>
-            <Tab icon="fas fa-bong" name="New">
-              <Create db={this.db}
-                ref={ref => this.createForm = ref}/>
-            </Tab>
-            <Tab
-              icon={cls("fas fa-list", {"has-text-danger": listUpdated})}
-              name="List"
-              onActive={this.refreshList}>
-              {this.state.notes.map(n => <p>{JSON.stringify(n)}</p>)}
-            </Tab>
-            <Tab icon="fas fa-seedling" name="Review">
-              <Review
+          {this.state.url == "new"
+            && <Create db={this.db} ref={ref => this.createForm = ref}/>
+          }
+          {this.state.url == "list"
+            && this.state.notes.map(n => <p>{JSON.stringify(n)}</p>)
+          }
+          {this.state.url == "review"
+            && <Review
                 getNote={this.db.getRandomNote}
                 updateNote={this.updateNote} />
-            </Tab>
-            <Tab icon="fas fa-cog">
-              Config
-            </Tab>
-          </Tabs>
+          }
         </div>
       </div>
     );

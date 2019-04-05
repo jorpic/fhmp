@@ -59,27 +59,30 @@ export default class Create extends Component {
 
   render() {
     return (
-      <div class="container">
+      <div class="section">
         <div class="field">
           <textarea class={cls("textarea", {"is-success": this.state.draftSaved})}
             ref={ref => this.textarea = ref}
             onInput={this.onText}
             value={this.state.text}/>
         </div>
-        <div class="buttons">
-          <button class="button is-primary"
-            disabled={!this.state.text}
-            onClick={this.onSave}>
-            Save
-          </button>
-        </div>
-      {this.state.error &&
-        <div class="notification is-warning" onClick={this.dismissError}>
-          <button class="delete" onClick={this.dismissError}></button>
-          Sorry!<br/>
-          We could not save your note to the local storage: {this.state.error}.
-        </div>
-      }
+        {this.state.error &&
+          <div class="notification is-warning" onClick={this.dismissError}>
+            <button class="delete" onClick={this.dismissError}></button>
+            Sorry!<br/>
+            We could not save your note to the local storage: {this.state.error}.
+          </div>
+        }
+        <nav class="navbar is-light is-fixed-bottom">
+          <div class="navbar-brand">
+            <a class="navbar-item is-expanded has-text-centered"
+                disabled={!this.state.text}
+                onClick={this.onSave}
+            >
+              Save
+            </a>
+          </div>
+        </nav>
       </div>
     );
   }
