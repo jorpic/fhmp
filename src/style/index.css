@@ -2,3 +2,8 @@
 .navbar-item.is-active {
   color: #3273dc !important;
 }
+
+/* larger textarea to create notes */
+.textarea.has-extra-height {
+  height: 50vh;
+}

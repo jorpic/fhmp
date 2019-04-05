@@ -58,10 +58,14 @@ export default class Create extends Component {
 
 
   render() {
+    const textareaCls = cls(
+      "textarea has-extra-height",
+      {"is-success": this.state.draftSaved});
+
     return (
       <div class="section">
         <div class="field">
-          <textarea class={cls("textarea", {"is-success": this.state.draftSaved})}
+          <textarea class={textareaCls}
             ref={ref => this.textarea = ref}
             onInput={this.onText}
             value={this.state.text}/>
