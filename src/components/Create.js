@@ -1,3 +1,11 @@
+// Create component provides textarea to enter a note and some logic to save
+// it to storage.
+// Drafts are saved to IDB after a small timeout.
+// TODO:
+//  - preview rendered markdown
+//  - add tags and plugins
+//  - use conditional rendereing for save button
+
 import cls from "classnames";
 import {h, Component} from "preact";
 

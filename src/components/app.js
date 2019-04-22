@@ -1,3 +1,9 @@
+// This is the main component of our application.
+// It consists of navbar and container for the real components.
+// TODO:
+//  - add router so the visible component depends on URL.
+//  - import only used SVG icons from fontawesome
+
 import "../style";
 import "bulma/css/bulma.css";
 import "@fortawesome/fontawesome-free/css/solid";
@@ -14,7 +20,7 @@ export default class App extends Component {
   constructor(props) {
     super(props);
     this.state = {
-      listUpdated: false,
+      listUpdated: false, // FIXME: this is not used for now
       notes: [],
       url: "new"
     };

@@ -1,3 +1,7 @@
+// Navbar allows to switch current app section.
+// TODO:
+//  - show number of notes in the default review queue
+
 import cls from "classnames";
 import {h, cloneElement, Component} from "preact";
 

@@ -1,8 +1,13 @@
+// This component fetches a note from storage and presents it for a review.
+// There are buttons to mark note as "hard" or "easy".
+// TODO:
+//  - gently handle "unable to save review" (this is not a critical error)
+//  - show number of notes in the review queue
+//  - desktop-friendly styles for review buttons
+
 import {h, Component} from "preact";
 import Markdown from "preact-markdown";
 
-
-// TODO: gently handle "unable to save review" (this is not a critical error)
 
 export default class Review extends Component {
   constructor(props) {
