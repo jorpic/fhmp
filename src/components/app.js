@@ -2,14 +2,12 @@ import "../style";
 import "bulma/css/bulma.css";
 import "@fortawesome/fontawesome-free/css/solid";
 import "@fortawesome/fontawesome-free/css/fontawesome";
-import cls from "classnames";
 
-import { h, Component } from "preact";
-import { Navbar, NavbarItem } from "./Navbar";
+import {h, Component} from "preact";
+import {Navbar, NavbarItem} from "./Navbar";
 import Review from "./Review";
 import Create from "./Create";
 import Db from "../lib/Db";
-
 
 
 export default class App extends Component {
@@ -48,27 +46,27 @@ export default class App extends Component {
 
 
   render() {
-    const { menuActive, listUpdated } = this.state;
     return (
       <div>
         <Navbar url={this.state.url} onChange={this.onNavigate}>
           FHMP
-          <NavbarItem url="new" icon="fas fa-bong" text="Add Note"/>
-          <NavbarItem url="list" icon="fas fa-list" text="List"/>
-          <NavbarItem url="review" icon="fas fa-seedling" text="Review"/>
-          <NavbarItem url="config" icon="fas fa-cog" text="Config"/>
+          <NavbarItem url="new" icon="fas fa-bong" text="Add Note" />
+          <NavbarItem url="list" icon="fas fa-list" text="List" />
+          <NavbarItem url="review" icon="fas fa-seedling" text="Review" />
+          <NavbarItem url="config" icon="fas fa-cog" text="Config" />
         </Navbar>
         <div class="container">
-          {this.state.url == "new"
-            && <Create db={this.db} ref={ref => this.createForm = ref}/>
+          {this.state.url === "new" &&
+            <Create db={this.db} ref={ref => this.createForm = ref} />
           }
-          {this.state.url == "list"
-            && this.state.notes.map(n => <p>{JSON.stringify(n)}</p>)
+          {this.state.url === "list" &&
+            this.state.notes.map(n => <p>{JSON.stringify(n)}</p>)
           }
-          {this.state.url == "review"
-            && <Review
-                getNote={this.db.getRandomNote}
-                updateNote={this.updateNote} />
+          {this.state.url === "review" &&
+            <Review
+              getNote={this.db.getRandomNote}
+              updateNote={this.updateNote}
+            />
           }
         </div>
       </div>

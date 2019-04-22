@@ -1,5 +1,5 @@
 import cls from "classnames";
-import { h, Component } from "preact";
+import {h, Component} from "preact";
 
 
 export default class Create extends Component {
@@ -34,7 +34,7 @@ export default class Create extends Component {
   }
 
 
-  // called by parent to set focus in textarea
+  // called by a parent to focus the textarea
   focus() {
     this.textarea.focus();
   }
@@ -48,10 +48,10 @@ export default class Create extends Component {
 
 
   onSave = () => {
-    const { text } = this.state;
+    const {text} = this.state;
     this.props.db.createNote(text)
       .then(() => this.setState({text: ""}))
-      .catch(error => this.setState({error}))
+      .catch(error => this.setState({error}));
   }
 
   dismissError = () => this.setState({error: null})
@@ -68,20 +68,22 @@ export default class Create extends Component {
           <textarea class={textareaCls}
             ref={ref => this.textarea = ref}
             onInput={this.onText}
-            value={this.state.text}/>
+            value={this.state.text}
+          />
         </div>
         {this.state.error &&
           <div class="notification is-warning" onClick={this.dismissError}>
-            <button class="delete" onClick={this.dismissError}></button>
-            Sorry!<br/>
+            <button class="delete" onClick={this.dismissError} />
+            Sorry!
+            <br />
             We could not save your note to the local storage: {this.state.error}.
           </div>
         }
         <nav class="navbar is-light is-fixed-bottom">
           <div class="navbar-brand">
             <a class="navbar-item is-expanded has-text-centered"
-                disabled={!this.state.text}
-                onClick={this.onSave}
+              disabled={!this.state.text}
+              onClick={this.onSave}
             >
               Save
             </a>

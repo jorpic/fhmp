@@ -1,4 +1,4 @@
-import { h, Component } from "preact";
+import {h, Component} from "preact";
 import Markdown from "preact-markdown";
 
 
@@ -12,7 +12,7 @@ export default class Review extends Component {
       answer: "",
       isAnswerVisible: false
     };
-    this.skip()
+    this.skip();
   }
 
 
@@ -26,7 +26,7 @@ export default class Review extends Component {
         question,
         answer,
         isAnswerVisible: false,
-      })
+      });
     })
   soon = () => {
     this.props.updateNote({}); // this.state.noteId, {reviewTimestamp.push(now), result: -1});
@@ -37,15 +37,15 @@ export default class Review extends Component {
 
 
   render() {
-    const btn = (text, onClick) =>
+    const btn = (text, onClick) => (
       <a class="navbar-item is-expanded" onClick={onClick}>
         {text}
-      </a>;
+      </a>);
 
     return (
       <div class="section">
         <div class="content">
-          <Markdown markdown={this.state.question}/>
+          <Markdown markdown={this.state.question} />
         </div>
         {!this.state.isAnswerVisible &&
           <div class="field">
@@ -56,7 +56,7 @@ export default class Review extends Component {
         }
         {this.state.isAnswerVisible &&
           <div class="content">
-            <Markdown markdown={this.state.answer}/>
+            <Markdown markdown={this.state.answer} />
           </div>
         }
         <nav class="navbar is-light is-fixed-bottom">
