@@ -41,6 +41,9 @@ export default class App extends Component {
     // Bulma requires this to stick navbar to the top and bottom
     document.body.classList.add("has-navbar-fixed-top");
     document.body.classList.add("has-navbar-fixed-bottom");
+
+    // ask for persistent storage
+    navigator.storage && navigator.storage.persist();
   }
 
   refreshList = () => {
