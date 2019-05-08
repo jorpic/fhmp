@@ -8,6 +8,7 @@
 
 import cls from "classnames";
 import {h, Component} from "preact";
+import config from "../config";
 
 
 export default class Create extends Component {
@@ -28,12 +29,11 @@ export default class Create extends Component {
 
     // save draft every now and then
     // FIXME: handle "can't save" errors?
-    const DRAFT_SAVE_TIMEOUT = 4; // seconds
     this.draftSaveLoop = setInterval(
       () => this.state.draftSaved
         || this.props.db.saveDraft(this.state.text)
           .then(() => this.setState({draftSaved: true})),
-      DRAFT_SAVE_TIMEOUT*1000);
+      config.DRAFT_SAVE_TIMEOUT);
   }
 
   componentWillUnmount() {

@@ -1,6 +1,6 @@
 import Dexie from "dexie";
 
-const DB_VERSION = 2;
+const DB_VERSION = 3;
 
 export default class Db {
   constructor() {
@@ -8,12 +8,19 @@ export default class Db {
     this.idb.version(1).stores({
       Notes: "++id,createTime",
     });
-    this.idb.version(DB_VERSION).stores({
+    this.idb.version(2).stores({
       Notes: "++id,createTime",
       Drafts: "++id",
     });
-    this.idb.open();
+    this.idb.version(DB_VERSION).stores({
+      Notes: "++id,createTime",
+      Drafts: "++id",
+      Config: "id",
+    });
   }
+
+
+  open = () => this.idb.open()
 
 
   createNote = text => {
@@ -21,6 +28,11 @@ export default class Db {
     return this.idb.Notes.add({createTime, text})
       .then(() => this.idb.Drafts.clear());
   }
+
+
+  // There is only one config and it has id = 0.
+  loadConfig = () => this.idb.Config.get(0)
+  saveConfig = cfg => this.idb.Config.put({id: 0, ...cfg})
 
 
   // FIXME: take oldest 100 by last acess time, select random among them
