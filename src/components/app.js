@@ -87,7 +87,7 @@ export default class App extends Component {
         }
         {message &&
           <div class="modal is-active">
-            <div class="modal-background" onClick={this.clearMessage}></div>
+            <div class="modal-background" onClick={this.clearMessage} />
             <div class="modal-content" onClick={this.clearMessage}>
               <article
                 class={cls("message", {

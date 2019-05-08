@@ -88,7 +88,7 @@ export default class Create extends Component {
             ref={ref => this.textarea = ref}
             onInput={this.onText}
             value={this.state.text}
-            autofocus={true}
+            autofocus="true"
           />
         </div>
 
