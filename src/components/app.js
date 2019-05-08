@@ -11,6 +11,7 @@ import "bulma/css/bulma.css";
 import "@fortawesome/fontawesome-free/css/solid";
 import "@fortawesome/fontawesome-free/css/fontawesome";
 
+import cls from "classnames";
 import {h, Component} from "preact";
 import {loadConfig} from "../config";
 import {Navbar, NavbarItem} from "./Navbar";
@@ -25,8 +26,9 @@ export default class App extends Component {
     super(props);
     this.state = {
       notes: [],
-      url: "config",
-      db: null
+      url: "new",
+      db: null,
+      message: null,
     };
   }
 
@@ -37,10 +39,8 @@ export default class App extends Component {
       .then(() => loadConfig(db))
       // Notify that db is ready only after config is loaded.
       // To prevent using config before it is ready.
-      .then(() => this.setState({db}));
-    // FIXME: catch
-
-    this.createForm && this.createForm.focus();
+      .then(() => this.setState({db}))
+      .catch(() => this.onMessage({error: true, msg: "Loading form DB failed"}));
 
     // Bulma requires this to stick navbar to the top and bottom.
     document.body.classList.add("has-navbar-fixed-top");
@@ -50,11 +50,16 @@ export default class App extends Component {
     navigator.storage && navigator.storage.persist();
   }
 
+
   onNavigate = url => this.setState({url})
+
+  // Show important messages on a modal form.
+  onMessage = message => this.setState({message})
+  clearMessage = () => this.setState({message: null})
 
 
   render() {
-    const {db, url} = this.state;
+    const {db, url, message} = this.state;
     return (
       <div>
         <Navbar url={url} onChange={this.onNavigate}>
@@ -67,7 +72,7 @@ export default class App extends Component {
         {db &&
           <div class="container">
             {url === "new" &&
-              <Create db={db} ref={ref => this.createForm = ref} />
+              <Create db={db} onMessage={this.onMessage} />
             }
             {this.state.url === "review" &&
               <Review
@@ -76,8 +81,23 @@ export default class App extends Component {
               />
             }
             {this.state.url === "config" &&
-              <Config db={db} />
+              <Config db={db} onMessage={this.onMessage} />
             }
+          </div>
+        }
+        {message &&
+          <div class="modal is-active">
+            <div class="modal-background" onClick={this.clearMessage}></div>
+            <div class="modal-content" onClick={this.clearMessage}>
+              <article
+                class={cls("message", {
+                  "is-danger": message.error,
+                  "is-warning": message.warning,
+                  "is-success": message.success})}
+              >
+                <div class="message-body">{message.msg}</div>
+              </article>
+            </div>
           </div>
         }
       </div>

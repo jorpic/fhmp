@@ -15,7 +15,6 @@ export default class Create extends Component {
   constructor(props) {
     super(props);
     this.state = {
-      error: null,
       text: "",
       draftSaved: true
     };
@@ -24,11 +23,14 @@ export default class Create extends Component {
   componentDidMount() {
     // load draft from IDB
     this.props.db.getDraft()
-      .then(draft => draft !== undefined
-        && this.setState({text: draft.text}));
+      .then(draft =>
+        draft !== undefined && this.setState({text: draft.text}))
+      .catch(() => this.props.onMessage({
+        warning: true,
+        msg: "Failed to load draft from storage"
+      }));
 
     // save draft every now and then
-    // FIXME: handle "can't save" errors?
     this.draftSaveLoop = setInterval(
       () => this.state.draftSaved
         || this.props.db.saveDraft(this.state.text)
@@ -38,31 +40,40 @@ export default class Create extends Component {
 
   componentWillUnmount() {
     clearInterval(this.draftSaveLoop);
-    this.props.db.saveDraft(this.state.text);
+    this.props.db.saveDraft(this.state.text)
+      .catch(() => this.props.onMessage({
+        warning: true,
+        msg: "Failed to save draft"
+      }));
   }
 
 
-  // called by a parent to focus the textarea
-  focus() {
-    this.textarea.focus();
-  }
-
-
-  onText = ev =>
-    this.setState({
-      text: ev.target.value,
-      draftSaved: false,
-    })
+  onText = ev => this.setState({
+    text: ev.target.value,
+    draftSaved: false,
+  })
 
 
   onSave = () => {
     const {text} = this.state;
     this.props.db.createNote(text)
-      .then(() => this.setState({text: ""}))
-      .catch(error => this.setState({error}));
+      .then(() => {
+        this.setState({text: ""});
+        this.props.onMessage({
+          success: true,
+          msg: "Message saved sucessfully."
+        });
+      })
+      .catch(err => this.props.onMessage({
+        error: true,
+        msg: (
+          <span>
+            Sorry! <br />
+            We could not save your note to the local storage. <br />
+            {err}
+          </span>)
+      }));
   }
-
-  dismissError = () => this.setState({error: null})
 
 
   render() {
@@ -77,16 +88,10 @@ export default class Create extends Component {
             ref={ref => this.textarea = ref}
             onInput={this.onText}
             value={this.state.text}
+            autofocus={true}
           />
         </div>
-        {this.state.error &&
-          <div class="notification is-warning" onClick={this.dismissError}>
-            <button class="delete" onClick={this.dismissError} />
-            Sorry!
-            <br />
-            We could not save your note to the local storage: {this.state.error}.
-          </div>
-        }
+
         <nav class="navbar is-light is-fixed-bottom">
           <div class="navbar-brand">
             <a class="navbar-item is-expanded has-text-centered"
@@ -97,7 +102,6 @@ export default class Create extends Component {
             </a>
           </div>
         </nav>
-      </div>
-    );
+      </div>);
   }
 }
