@@ -16,7 +16,7 @@ import {loadConfig} from "../config";
 import {Navbar, NavbarItem} from "./Navbar";
 import Review from "./Review";
 import Create from "./Create";
-import Db from "../lib/Db";
+import Db from "../db";
 
 
 export default class App extends Component {
