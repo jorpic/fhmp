@@ -2,8 +2,8 @@
 const config = {
   // Draft note will be saved to the storage every now and then
   DRAFT_SAVE_TIMEOUT: 4000, // µseconds
-  SERVER_URL: null,
-  CLIENT_KEY: null,
+  SYNC_SERVER_URL: "",
+  CLIENT_KEY: "",
 };
 
 
@@ -11,15 +11,19 @@ const config = {
 export function loadConfig(db) {
   return db.loadConfig().then(cfg => {
     if (cfg) {
-      for (let k in config) config[k] = cfg[k];
+      for (let k in config)
+        if (k in cfg) config[k] = cfg[k];
     }
   });
 }
 
 
 // Saves global config into IDB
-export function saveConfig(db) {
-  return db.saveConfig(config);
+export function saveConfig(db, cfg) {
+  return db.saveConfig(cfg).then(() => {
+    for (let k in config)
+      if (k in cfg) config[k] = cfg[k];
+  });
 }
 
 

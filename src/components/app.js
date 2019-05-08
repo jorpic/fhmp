@@ -16,6 +16,7 @@ import {loadConfig} from "../config";
 import {Navbar, NavbarItem} from "./Navbar";
 import Review from "./Review";
 import Create from "./Create";
+import Config from "./Config";
 import Db from "../db";
 
 
@@ -24,17 +25,19 @@ export default class App extends Component {
     super(props);
     this.state = {
       notes: [],
-      url: "new"
+      url: "config",
+      db: null
     };
   }
 
 
   componentDidMount() {
     const db = new Db();
-    db.open().then(() => {
-      this.db = db;
-      return loadConfig(db);
-    });
+    db.open()
+      .then(() => loadConfig(db))
+      // Notify that db is ready only after config is loaded.
+      // To prevent using config before it is ready.
+      .then(() => this.setState({db}));
     // FIXME: catch
 
     this.createForm && this.createForm.focus();
@@ -51,27 +54,29 @@ export default class App extends Component {
 
 
   render() {
+    const {db, url} = this.state;
     return (
       <div>
-        <Navbar url={this.state.url} onChange={this.onNavigate}>
+        <Navbar url={url} onChange={this.onNavigate}>
           FHMP
           <NavbarItem url="new" icon="fas fa-bong" text="Add Note" />
           <NavbarItem url="list" icon="fas fa-list" text="List" />
           <NavbarItem url="review" icon="fas fa-seedling" text="Review" />
+          <NavbarItem url="config" icon="fas fa-cog" text="Config" />
         </Navbar>
-        {this.db &&
+        {db &&
           <div class="container">
-            {this.state.url === "new" &&
-              <Create db={this.db} ref={ref => this.createForm = ref} />
-            }
-            {this.state.url === "list" &&
-              this.state.notes.map(n => <p>{JSON.stringify(n)}</p>)
+            {url === "new" &&
+              <Create db={db} ref={ref => this.createForm = ref} />
             }
             {this.state.url === "review" &&
               <Review
-                getNote={this.db.getRandomNote}
+                getNote={db.getRandomNote}
                 updateNote={this.updateNote}
               />
+            }
+            {this.state.url === "config" &&
+              <Config db={db} />
             }
           </div>
         }
