@@ -36,6 +36,7 @@ export default class Config extends Component {
   setTimeout = ev => this.setState({DRAFT_SAVE_TIMEOUT: ev.target.value})
   setURL     = ev => this.setState({SYNC_SERVER_URL: ev.target.value})
   setKey     = ev => this.setState({CLIENT_KEY: ev.target.value})
+  setQLimit  = ev => this.setState({QUEUE_LIMIT: ev.target.value})
 
 
   render() {
@@ -47,6 +48,12 @@ export default class Config extends Component {
           value={this.state.DRAFT_SAVE_TIMEOUT}
           valid={this.isValidNumber}
           onInput={this.setTimeout}
+        />
+
+        <Field
+          name="Review queue size limit"
+          value={this.state.QUEUE_LIMIT}
+          onInput={this.setQLimit}
         />
 
         <Field

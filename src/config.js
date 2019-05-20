@@ -4,6 +4,7 @@ const config = {
   DRAFT_SAVE_TIMEOUT: 4000, // µseconds
   SYNC_SERVER_URL: "",
   CLIENT_KEY: "",
+  QUEUE_LIMIT: 99,
 };
 
 

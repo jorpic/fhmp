@@ -75,10 +75,7 @@ export default class App extends Component {
               <Create db={db} onMessage={this.onMessage} />
             }
             {this.state.url === "review" &&
-              <Review
-                getNote={db.getRandomNote}
-                updateNote={this.updateNote}
-              />
+              <Review db={db} onMessage={this.onMessage} />
             }
             {this.state.url === "config" &&
               <Config db={db} onMessage={this.onMessage} />
