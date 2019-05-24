@@ -9,6 +9,7 @@
   },
   "homepage": "https://github.com/jorpic/fhmp#readme",
   "scripts": {
+    "test": "jest",
     "build": "preact build -no-prerender",
     "dev": "preact watch",
     "lint": "eslint src",
@@ -49,11 +50,15 @@
     "build/*"
   ],
   "devDependencies": {
+    "@babel/core": "^7.4.5",
+    "@babel/preset-env": "^7.4.5",
     "@fortawesome/fontawesome-free": "^5.8.1",
+    "babel-jest": "^24.8.0",
     "eslint": "^4.5.0",
     "eslint-config-developit": "^1.1.1",
     "eslint-plugin-compat": "^3.1.1",
     "gh-pages": "^2.0.1",
+    "jest": "^24.8.0",
     "preact-cli": "^3.0.0-rc.1"
   },
   "dependencies": {
