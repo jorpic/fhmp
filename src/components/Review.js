@@ -49,8 +49,17 @@ export default class Review extends Component {
   })
 
 
-  hard = () => console.log("not implemented")
-  easy = () => console.log("not implemented")
+  review = result => {
+    this.props.db.addReview(this.state.queue[0], result)
+      .then(this.skip)
+      .catch(err => this.props.onMessage({
+        warning: true,
+        err,
+        msg: (<span>Failed to save your review: {err}</span>),
+      }));
+  }
+  hard = () => this.review("hard")
+  easy = () => this.review("easy")
 
 
   render() {

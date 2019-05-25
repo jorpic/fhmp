@@ -1,5 +1,5 @@
 import Dexie from "dexie";
-import config from "./config";
+import {nextReviewInterval, default as config} from "./config";
 
 
 const DB_VERSION = 4;
@@ -22,9 +22,9 @@ export default class Db {
     });
     this.idb.version(++ver).stores({
       Config: "id",
-      Drafts: "++id",
-      Notes: "id,review_at",
-      Reviews: "",
+      Drafts: "++id", // text
+      Notes: "id,nextReview", // lastReview,text
+      Reviews: "time", // note,result // FIXME: random id for reviews
     });
     console.assert(ver === DB_VERSION, "DB version mismatch");
   }
@@ -55,24 +55,39 @@ export default class Db {
     // with a dosen of devices.
     const id = Date.now().toString(36)
       + Math.random().toString(36).substring(1,4);
-    const created_at = new Date().toISOString();
     // Review this note as soon as possible.
-    const review_at = created_at;
-    return this.idb.Notes.add({id, review_at, created_at, text})
+    const now = new Date().toISOString();
+    const note = {id, lastReview: now, nextReview: now, text};
+    return this.idb.Notes.add(note)
       .then(() => this.idb.Drafts.clear());
   }
-
-  updateNode = () => Promise.reject("not implemented")
 
 
   // Fetch notes to review.
   getNotesToReview = () => {
     const now = new Date().toISOString();
-    return this.idb.Notes.where("review_at")
+    return this.idb.Notes.where("nextReview")
       .below(now)
       .limit(config.QUEUE_LIMIT)
       .toArray()
       .then(shuffle);
+  }
+
+
+  addReview = (note, result)  => {
+    const review = {
+      note: note.id,
+      time: new Date().toISOString(),
+      result,
+    };
+    const now = new Date();
+    const lastReview = new Date(note.lastReview);
+    const expectedInterval = new Date(note.nextReview) - lastReview;
+    const actualInterval = now - lastReview;
+    const interval = nextReviewInterval(expectedInterval, actualInterval, result);
+    const nextReview = new Date(now.valueOf() + interval).toISOString();
+    return this.idb.Notes.update(note.id, {lastReview: now.toISOString(), nextReview})
+      .then(() => this.idb.Reviews.add(review));
   }
 }
 
