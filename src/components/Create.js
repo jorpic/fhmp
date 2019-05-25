@@ -41,8 +41,9 @@ export default class Create extends Component {
   componentWillUnmount() {
     clearInterval(this.draftSaveLoop);
     this.props.db.saveDraft(this.state.text)
-      .catch(() => this.props.onMessage({
+      .catch(err => this.props.onMessage({
         warning: true,
+        err,
         msg: "Failed to save draft"
       }));
   }
@@ -66,11 +67,11 @@ export default class Create extends Component {
       })
       .catch(err => this.props.onMessage({
         error: true,
+        err,
         msg: (
           <span>
             Sorry! <br />
-            We could not save your note to the local storage. <br />
-            {err}
+            We could not save your note to the local storage.
           </span>)
       }));
   }

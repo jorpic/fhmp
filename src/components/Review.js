@@ -30,6 +30,7 @@ export default class Review extends Component {
       .then(queue => this.setState({queue}))
       .catch(err => this.props.onMessage({
         error: true,
+        err,
         msg: (
           <span>
             We are failed to fetch notes for review. <br />

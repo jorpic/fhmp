@@ -40,7 +40,7 @@ export default class App extends Component {
       // Notify that db is ready only after config is loaded.
       // To prevent using config before it is ready.
       .then(() => this.setState({db}))
-      .catch(() => this.onMessage({error: true, msg: "Loading form DB failed"}));
+      .catch(err => this.onMessage({error: true, err, msg: "Loading form DB failed"}));
 
     // Bulma requires this to stick navbar to the top and bottom.
     document.body.classList.add("has-navbar-fixed-top");
@@ -54,7 +54,11 @@ export default class App extends Component {
   onNavigate = url => this.setState({url})
 
   // Show important messages on a modal form.
-  onMessage = message => this.setState({message})
+  onMessage = message => {
+    if(message.error) console.error(message);
+    else if(message.warning) console.warn(message);
+    this.setState({message});
+  }
   clearMessage = () => this.setState({message: null})
 
 
