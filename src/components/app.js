@@ -4,7 +4,6 @@
 //  - add router so the visible component depends on URL.
 //  - import only used SVG icons from fontawesome
 //  - show progress-bar when DB is not ready
-//  - catch db errors (show modal)
 
 import "../style";
 import "bulma/css/bulma.css";
@@ -55,8 +54,8 @@ export default class App extends Component {
 
   // Show important messages on a modal form.
   onMessage = message => {
-    if(message.error) console.error(message);
-    else if(message.warning) console.warn(message);
+    if (message.error) console.error(message);
+    else if (message.warning) console.warn(message);
     this.setState({message});
   }
   clearMessage = () => this.setState({message: null})

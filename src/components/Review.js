@@ -1,11 +1,5 @@
 // This component fetches a note from storage and presents it for a review.
 // There are buttons to mark note as "hard" or "easy".
-// TODO:
-//  - gently handle "unable to save review" (this is not a critical error)
-//  - show number of notes in the review queue
-//  - add a button to fetch random notes if queue is empty
-//  - add a button to edit current note
-//  - desktop-friendly styles for review buttons
 
 import {h, Component} from "preact";
 import Markdown from "preact-markdown";
