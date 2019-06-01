@@ -62,3 +62,11 @@ typings/
 # lock files
 yarn.lock
 package-lock.json
+
+
+#Added by cargo
+#
+#already existing elements are commented out
+
+/target
+**/*.rs.bk
