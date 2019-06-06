@@ -6,7 +6,7 @@ use log::info;
 use env_logger::Env;
 use serde::Deserialize;
 use rusqlite::{params, Connection};
-use warp::{Filter, http::StatusCode, Reply, Rejection};
+use warp::{Filter, Reply, Rejection};
 use warp::filters::BoxedFilter;
 
 
@@ -55,11 +55,11 @@ fn main() -> Result<(), Error> {
 fn init_database(database_file: &str) -> Result<Connection, rusqlite::Error> {
     let db = Connection::open(database_file)?;
     db.execute(
-        "create table if not exists notes(json text)",
+        "create table if not exists notes(key text not null, json text not null)",
         params![],
     )?;
     db.execute(
-        "create table if not exists reviews(json text)",
+        "create table if not exists reviews(key text not null, json text not null)",
         params![],
     )?;
     Ok(db)
@@ -91,8 +91,8 @@ type Db = Arc<Mutex<Connection>>;
 fn get_notes(db: Db, key: String) -> Result<impl Reply, Rejection> {
     // FIXME: replace unwraps with rejections.
     let db = db.lock().unwrap();
-    let mut from_notes = db.prepare_cached("SELECT json from notes").unwrap();
-    let mut rows = from_notes.query(params![]).unwrap();
+    let mut from_notes = db.prepare_cached("SELECT json from notes where key = ?").unwrap();
+    let mut rows = from_notes.query(params![key]).unwrap();
     let mut notes = Vec::new();
     loop {
         match rows.next().unwrap() {
@@ -105,8 +105,8 @@ fn get_notes(db: Db, key: String) -> Result<impl Reply, Rejection> {
     }
     let notes = serde_json::Value::Array(notes);
 
-    let mut from_notes = db.prepare_cached("SELECT json from reviews").unwrap();
-    let mut rows = from_notes.query(params![]).unwrap();
+    let mut from_notes = db.prepare_cached("SELECT json from reviews where key = ?").unwrap();
+    let mut rows = from_notes.query(params![key]).unwrap();
     let mut reviews = Vec::new();
     loop {
         match rows.next().unwrap() {
@@ -125,7 +125,8 @@ fn get_notes(db: Db, key: String) -> Result<impl Reply, Rejection> {
 }
 
 
-fn put_notes(db: Db, key: String,  data: Vec<usize>) -> Result<impl Reply, Rejection> {
-    info!("put_notes: {}", key);
-    Ok(StatusCode::BAD_REQUEST)
+fn put_notes(db: Db, key: String,  data: serde_json::Value) -> Result<impl Reply, Rejection> {
+    let reviews = &data["reviews"].as_array().unwrap();
+    let notes = &data["notes"].as_array().unwrap();
+    Ok(warp::reply())
 }
