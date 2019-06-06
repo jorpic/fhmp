@@ -1,11 +1,10 @@
 
 use std::{env, fs, process};
 use std::sync::{Arc, Mutex};
-use failure::{Context, Error, Fail};
+use failure::{Error, Fallible, err_msg};
 use log::info;
 use env_logger::Env;
 use serde::Deserialize;
-use rusqlite::{params, Connection};
 use warp::{Filter, Reply, Rejection};
 use warp::filters::BoxedFilter;
 
@@ -17,21 +16,8 @@ struct Config {
     database_file: String,
 }
 
-trait WithContext<T>
-{
-    fn context(self, msg: &str) -> Result<T, Context<&str>>;
-}
 
-impl<T, E> WithContext<T> for Result<T, E>
-    where E: Fail
-{
-    fn context(self, msg: &str) -> Result<T, Context<&str>> {
-        self.map_err(|e| e.context(msg))
-    }
-}
-
-
-fn main() -> Result<(), Error> {
+fn main() -> Fallible<()> {
     let args: Vec<String> = env::args().collect();
     if args.len() != 2 {
         eprintln!("Usage: sync-server <config.toml>");
@@ -52,21 +38,21 @@ fn main() -> Result<(), Error> {
 }
 
 
-fn init_database(database_file: &str) -> Result<Connection, rusqlite::Error> {
-    let db = Connection::open(database_file)?;
+fn init_database(database_file: &str)
+    -> Result<sqlite::Connection, sqlite::Error>
+{
+    let db = sqlite::open(database_file)?;
     db.execute(
-        "create table if not exists notes(key text not null, json text not null)",
-        params![],
+        "create table if not exists notes(key text not null, json text not null)"
     )?;
     db.execute(
-        "create table if not exists reviews(key text not null, json text not null)",
-        params![],
+        "create table if not exists reviews(key text not null, json text not null)"
     )?;
     Ok(db)
 }
 
 
-fn init_api(conn: Connection) -> BoxedFilter<(impl Reply,)> {
+fn init_api(conn: sqlite::Connection) -> BoxedFilter<(impl Reply,)> {
     let db = Arc::new(Mutex::new(conn));
     let db = warp::any().map(move || db.clone());
     let put = warp::post2()
@@ -86,41 +72,26 @@ fn init_api(conn: Connection) -> BoxedFilter<(impl Reply,)> {
 }
 
 
-type Db = Arc<Mutex<Connection>>;
+type Db = Arc<Mutex<sqlite::Connection>>;
 
 fn get_notes(db: Db, key: String) -> Result<impl Reply, Rejection> {
-    // FIXME: replace unwraps with rejections.
-    let db = db.lock().unwrap();
-    let mut from_notes = db.prepare_cached("SELECT json from notes where key = ?").unwrap();
-    let mut rows = from_notes.query(params![key]).unwrap();
-    let mut notes = Vec::new();
-    loop {
-        match rows.next().unwrap() {
-            None => break,
-            Some(row) => {
-                let json = row.get(0).unwrap();
-                notes.push(json);
-            }
-        }
-    }
-    let notes = serde_json::Value::Array(notes);
+    get_notes_aux(db, key)
+        .map_err(|e| warp::reject::custom(e))
+}
 
-    let mut from_notes = db.prepare_cached("SELECT json from reviews where key = ?").unwrap();
-    let mut rows = from_notes.query(params![key]).unwrap();
-    let mut reviews = Vec::new();
-    loop {
-        match rows.next().unwrap() {
-            None => break,
-            Some(row) => {
-                let json = row.get(0).unwrap();
-                reviews.push(json);
-            }
-        }
-    }
-    let reviews = serde_json::Value::Array(reviews);
+fn get_notes_aux(db: Db, key: String) -> Fallible<impl Reply> {
+    let notes = select_json(
+        &db,
+        "SELECT json from notes where key = ?",
+        key.as_str())?;
+    let reviews = select_json(
+        &db,
+        "SELECT json from reviews where key = ?",
+        key.as_str())?;
+
     Ok(warp::reply::json(&serde_json::json!({
         "notes": notes,
-        "reviews": reviews
+        "reviews": reviews,
     })))
 }
 
@@ -130,3 +101,36 @@ fn put_notes(db: Db, key: String,  data: serde_json::Value) -> Result<impl Reply
     let notes = &data["notes"].as_array().unwrap();
     Ok(warp::reply())
 }
+
+
+// Helper stuff
+
+fn select_json(db: &Db, query: &str, key: &str)
+    -> Fallible<serde_json::Value>
+{
+    let db = db.lock()
+        .map_err(|_| err_msg("db.lock() failed"))?;
+    let mut from_notes = db.prepare(query)?;
+    from_notes.bind(1, key)?;
+    let mut values = Vec::new();
+    while let sqlite::State::Row = from_notes.next()? {
+        let text = from_notes.read::<String>(0)?;
+        let json = serde_json::from_str(&text)?;
+        values.push(json);
+    }
+    Ok(serde_json::Value::Array(values))
+}
+
+trait WithContext<T>
+{
+    fn context(self, msg: &str) -> Result<T, failure::Context<&str>>;
+}
+
+impl<T, E> WithContext<T> for Result<T, E>
+    where E: failure::Fail
+{
+    fn context(self, msg: &str) -> Result<T, failure::Context<&str>> {
+        self.map_err(|e| e.context(msg))
+    }
+}
+
