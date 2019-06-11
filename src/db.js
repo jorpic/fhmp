@@ -10,7 +10,7 @@ export default class Db {
     this.idb = new Dexie("fhmp");
     this.idb.version(++ver).stores({
       Config: "id",
-      Drafts: "id", // text
+      Drafts: "id", // text, timestamp
       Notes: "id,nextReview", // lastReview,text
       Reviews: "time", // note,result // FIXME: random id for reviews
     });
@@ -27,8 +27,12 @@ export default class Db {
 
   // NB. We use empty string "" as a key for drafts of notes that was
   // not saved yet.
-  saveDraft = (id, text) => this.idb.Drafts.put({id: id || "", text})
-  getDraft = id => this.idb.Drafts.get(id || "")
+  saveDraft = (id, text) => this.idb.Drafts.put({
+    id: id || "",
+    text,
+    time: new Date().toISOString()
+  })
+  getDraft = id => this.idb.Drafts.get({id: id || ""})
   dropDraft = id => this.idb.Drafts.delete(id || "")
 
 
@@ -49,6 +53,13 @@ export default class Db {
     };
     return this.idb.Notes.add(note)
       .then(() => this.idb.Drafts.clear());
+  }
+
+  getNote = id => this.idb.Notes.get(id)
+
+  updateNote = (id, text) => {
+    const ver = Date.now().toString(36);
+    return this.idb.Notes.put({id: id, text, ver});
   }
 
 

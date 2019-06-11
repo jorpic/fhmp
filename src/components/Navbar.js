@@ -1,5 +1,5 @@
 // Navbar allows to switch current app section.
-e
+
 import cls from "classnames";
 import {h, cloneElement, Component} from "preact";
 

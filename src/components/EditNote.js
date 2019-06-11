@@ -1,46 +1,60 @@
-// Create component provides textarea to enter a note and some logic to save
+// EditNote component provides textarea to enter a note and some logic to save
 // it to storage.
 // Drafts are saved to IDB after a small timeout.
+// TODO:
+// - drop draft on cancel
 
 import cls from "classnames";
 import {h, Component} from "preact";
 import config from "../config";
 
 
-export default class Create extends Component {
+export default class EditNote extends Component {
   constructor(props) {
     super(props);
     this.state = {
       text: "",
+      draft: null, // used only to show message
       draftSaved: true
     };
   }
 
+
   componentDidMount() {
-    // load draft from IDB
-    this.props.db.getDraft()
+    const {noteId} = this.props;
+    this.props.db.getDraft(noteId) // load draft if it exists
       .then(draft =>
-        draft !== undefined && this.setState({text: draft.text}))
-      .catch(() => this.props.onMessage({
-        warning: true,
-        msg: "Failed to load draft from storage"
-      }));
+        draft.text.length > 10 // draft is long enough to be useful
+          ? this.setState({text: draft.text, draft, draftSaved: true})
+          : this.loadSavedNote())
+      .catch(this.loadSavedNote);
 
     // save draft every now and then
     this.draftSaveLoop = setInterval(
       () => this.state.draftSaved
-        || this.props.db.saveDraft(this.state.text)
+        || this.props.db.saveDraft(noteId, this.state.text)
           .then(() => this.setState({draftSaved: true})),
       config.DRAFT_SAVE_TIMEOUT);
   }
 
+
+  loadSavedNote = () =>
+    this.props.noteId
+      ? this.props.db.getNote(this.props.noteId)
+          .then(note =>
+            this.setState({draft: null, text: note ? note.text : ""}))
+      : this.setState({draft: null, text: ""})
+
+  dismissDraftMsg = () => this.setState({draft: null})
+
+
   componentWillUnmount() {
     clearInterval(this.draftSaveLoop);
-    this.props.db.saveDraft(this.state.text)
+    this.props.db.saveDraft(this.props.noteId, this.state.text)
       .catch(err => this.props.onMessage({
         warning: true,
         err,
-        msg: "Failed to save draft"
+        msg: "Failed to save the draft"
       }));
   }
 
@@ -53,9 +67,13 @@ export default class Create extends Component {
 
   onSave = () => {
     const {text} = this.state;
-    this.props.db.createNote(text)
+    const action = this.props.noteId
+      ? () => this.props.db.createNote(text)
+      : () => this.props.db.updateNote(this.props.noteId, text);
+    action()
       .then(() => {
-        this.setState({text: ""});
+        this.props.db.dropDraft(this.props.noteId);
+        this.setState({draftSaved: true});
         this.props.onMessage({
           success: true,
           msg: "Message saved sucessfully."
@@ -81,6 +99,19 @@ export default class Create extends Component {
     return (
       <div class="section">
         <div class="field">
+          {this.state.draft && (
+            <article class="message is-warning">
+              <div>
+                Found draft saved on {this.state.draft.time}
+                <button class="button is-light" onClick={this.loadSavedNote}>
+                  Drop it
+                </button>
+                <button class="button is-light" onClick={this.dismissDraftMsg}>
+                  Keep it
+                </button>
+              </div>
+            </article>
+          )}
           <textarea class={textareaCls}
             ref={ref => this.textarea = ref}
             onInput={this.onText}

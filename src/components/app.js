@@ -15,7 +15,7 @@ import {h, Component} from "preact";
 import {loadConfig} from "../config";
 import {Navbar, NavbarItem} from "./Navbar";
 import Review from "./Review";
-import Create from "./Create";
+import EditNote from "./EditNote";
 import Config from "./Config";
 import Db from "../db";
 
@@ -75,7 +75,7 @@ export default class App extends Component {
         {db &&
           <div class="container">
             {url === "new" &&
-              <Create db={db} onMessage={this.onMessage} />
+              <EditNote db={db} onMessage={this.onMessage} />
             }
             {this.state.url === "review" &&
               <Review db={db} onMessage={this.onMessage} />
