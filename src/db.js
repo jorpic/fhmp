@@ -10,7 +10,7 @@ export default class Db {
     this.idb = new Dexie("fhmp");
     this.idb.version(++ver).stores({
       Config: "id",
-      Drafts: "++id", // text
+      Drafts: "id", // text
       Notes: "id,nextReview", // lastReview,text
       Reviews: "time", // note,result // FIXME: random id for reviews
     });
@@ -25,16 +25,11 @@ export default class Db {
   saveConfig = cfg => this.idb.Config.put({id: 0, ...cfg})
 
 
-  saveDraft = text => {
-    const Drafts = this.idb.Drafts;
-    // Delete all previous drafts after successfully adding new one.
-    return Drafts.toCollection().primaryKeys()
-      .then(keys =>
-        Drafts.add({text})
-          .then(() => Drafts.bulkDelete(keys)));
-  }
-
-  getDraft = () => this.idb.Drafts.toCollection().last()
+  // NB. We use empty string "" as a key for drafts of notes that was
+  // not saved yet.
+  saveDraft = (id, text) => this.idb.Drafts.put({id: id || "", text})
+  getDraft = id => this.idb.Drafts.get(id || "")
+  dropDraft = id => this.idb.Drafts.delete(id || "")
 
 
   createNote = text => {
