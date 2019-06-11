@@ -36,11 +36,17 @@ export default class Db {
     // We use timestamp with random suffix as unique note id.
     // Couple of base-36 digits should be enough to prevent collisions
     // with a dosen of devices.
-    const id = Date.now().toString(36)
-      + Math.random().toString(36).substring(1,4);
+    const now36 = Date.now().toString(36);
+    const id = now36 + Math.random().toString(36).substring(1,4);
     // Review this note as soon as possible.
     const now = new Date().toISOString();
-    const note = {id, lastReview: now, nextReview: now, text};
+    const note = {
+      id,
+      lastReview: now,
+      nextReview: now,
+      text,
+      ver: now36, // encoded timestamp as note version
+    };
     return this.idb.Notes.add(note)
       .then(() => this.idb.Drafts.clear());
   }
