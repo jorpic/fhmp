@@ -2,24 +2,12 @@ import Dexie from "dexie";
 import {nextReviewInterval, default as config} from "./config";
 
 
-const DB_VERSION = 4;
+const DB_VERSION = 1;
 
 export default class Db {
   constructor() {
     let ver = 0;
     this.idb = new Dexie("fhmp");
-    this.idb.version(++ver).stores({
-      Notes: "++id,createTime",
-    });
-    this.idb.version(++ver).stores({
-      Notes: "++id,createTime",
-      Drafts: "++id",
-    });
-    this.idb.version(++ver).stores({
-      Notes: "++id,createTime",
-      Drafts: "++id",
-      Config: "id",
-    });
     this.idb.version(++ver).stores({
       Config: "id",
       Drafts: "++id", // text
