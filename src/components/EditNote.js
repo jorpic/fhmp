@@ -68,15 +68,15 @@ export default class EditNote extends Component {
   onSave = () => {
     const {text} = this.state;
     const action = this.props.noteId
-      ? () => this.props.db.createNote(text)
-      : () => this.props.db.updateNote(this.props.noteId, text);
+      ? () => this.props.db.updateNote(this.props.noteId, text)
+      : () => this.props.db.createNote(text);
     action()
       .then(() => {
         this.props.db.dropDraft(this.props.noteId);
-        this.setState({draftSaved: true});
+        this.setState({draftSaved: true, text: ""});
         this.props.onMessage({
           success: true,
-          msg: "Message saved sucessfully."
+          msg: "Your note was saved sucessfully."
         });
       })
       .catch(err => this.props.onMessage({
