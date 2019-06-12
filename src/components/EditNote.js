@@ -7,6 +7,7 @@
 import cls from "classnames";
 import {h, Component} from "preact";
 import config from "../config";
+import Page from "./Page";
 
 
 export default class EditNote extends Component {
@@ -76,7 +77,7 @@ export default class EditNote extends Component {
         this.setState({draftSaved: true, text: ""});
         this.props.onMessage({
           success: true,
-          msg: "Your note was saved sucessfully."
+          msg: "Your note was saved successfully."
         });
       })
       .catch(err => this.props.onMessage({
@@ -97,7 +98,7 @@ export default class EditNote extends Component {
       {"is-success": this.state.draftSaved});
 
     return (
-      <div class="section">
+      <Page>
         <div class="field">
           {this.state.draft && (
             <article class="message is-warning">
@@ -130,6 +131,6 @@ export default class EditNote extends Component {
             </a>
           </div>
         </nav>
-      </div>);
+      </Page>);
   }
 }

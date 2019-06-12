@@ -1,6 +1,8 @@
 import cls from "classnames";
 import {h, Component} from "preact";
+import {route} from "preact-router";
 import config from "../config";
+import Page from "./Page";
 
 
 export default class ListNotes extends Component {
@@ -27,15 +29,26 @@ export default class ListNotes extends Component {
   }
 
 
+  onEdit(noteId) {
+    return () => route("/edit/" + noteId)
+  }
+
+
   render() {
     return (
-      <div class="section list-notes">
-      {this.state.notes.map(n =>
-        <article class="notification">
-          {n.question}
-        </article>
-      )}
-      </div>
+      <Page class="list-notes">
+        {this.state.notes.map(n =>
+          <article class="notification">
+            {n.question}
+              <span
+                class="button edit is-small is-light"
+                onClick={this.onEdit(n.id)}
+              >
+                <i class="fas fa-edit" />
+              </span>
+          </article>
+        )}
+      </Page>
     );
   }
 }

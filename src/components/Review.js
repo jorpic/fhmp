@@ -3,6 +3,7 @@
 
 import {h, Component} from "preact";
 import Markdown from "preact-markdown";
+import Page from "./Page";
 
 
 export default class Review extends Component {
@@ -70,7 +71,7 @@ export default class Review extends Component {
     const [question, answer] = queue[0].text.split(/\n-{4,}\n/);
 
     return (
-      <div class="section">
+      <Page>
         <div class="content"><Markdown markdown={question} /></div>
         {!isAnswerVisible &&
           <div class="field">
@@ -89,7 +90,7 @@ export default class Review extends Component {
             <Btn text="Easy" onClick={this.easy} />
           </div>
         </nav>
-      </div>);
+      </Page>);
   }
 }
 

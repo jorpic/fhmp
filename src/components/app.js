@@ -12,8 +12,9 @@ import "@fortawesome/fontawesome-free/css/fontawesome";
 
 import cls from "classnames";
 import {h, Component} from "preact";
+import {Router, route} from "preact-router";
 import {loadConfig} from "../config";
-import {Navbar, NavbarItem} from "./Navbar";
+
 import Review from "./Review";
 import ListNotes from "./ListNotes";
 import EditNote from "./EditNote";
@@ -25,13 +26,9 @@ export default class App extends Component {
   constructor(props) {
     super(props);
     this.state = {
-      notes: [],
-      url: "list",
       db: null,
-      message: null,
     };
   }
-
 
   componentDidMount() {
     const db = new Db();
@@ -53,58 +50,32 @@ export default class App extends Component {
 
   onNavigate = url => this.setState({url})
 
-  // Show important messages on a modal form.
-  onMessage = message => {
-    if (message.error) console.error(message);
-    else if (message.warning) console.warn(message);
-    this.setState({message});
-  }
-  clearMessage = () => this.setState({message: null})
-
 
   render() {
     const {db, url, message} = this.state;
+    if (!db) {
+      // FIXME: empty page just to be able to handle error notifications
+      // during DB loading.
+      return "Loading...";
+    }
     return (
-      <div>
-        <Navbar url={url} onChange={this.onNavigate}>
-          FHMP
-          <NavbarItem url="new" icon="fas fa-seedling" text="Add Note" />
-          <NavbarItem url="list" icon="fas fa-list" text="List" />
-          <NavbarItem url="review" icon="fas fa-bong" text="Review" />
-          <NavbarItem url="config" icon="fas fa-cog" text="Config" />
-        </Navbar>
-        {db &&
-          <div class="container">
-            {url === "new" &&
-              <EditNote db={db} onMessage={this.onMessage} />
-            }
-            {url === "list" &&
-              <ListNotes db={db} onMessage={this.onMessage} />
-            }
-            {this.state.url === "review" &&
-              <Review db={db} onMessage={this.onMessage} />
-            }
-            {this.state.url === "config" &&
-              <Config db={db} onMessage={this.onMessage} />
-            }
-          </div>
-        }
-        {message &&
-          <div class="modal is-active">
-            <div class="modal-background" onClick={this.clearMessage} />
-            <div class="modal-content" onClick={this.clearMessage}>
-              <article
-                class={cls("message", {
-                  "is-danger": message.error,
-                  "is-warning": message.warning,
-                  "is-success": message.success})}
-              >
-                <div class="message-body">{message.msg}</div>
-              </article>
-            </div>
-          </div>
-        }
-      </div>
+      <Router>
+        <Default path="/" to="/list" />
+        <ListNotes path="/list" db={db} />
+        <EditNote path="/new" db={db} />
+        <EditNote path="/edit/:noteId" db={db} />
+        <Review path="/review" db={db} />
+        <Config path="/config" db={db} />
+      </Router>
     );
   }
+}
+
+
+class Default extends Component {
+  componentWillMount() {
+    route(this.props.to, true);
+  }
+
+  render() { return null; }
 }

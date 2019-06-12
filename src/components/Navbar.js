@@ -1,10 +1,11 @@
 // Navbar allows to switch current app section.
 
 import cls from "classnames";
-import {h, cloneElement, Component} from "preact";
+import {h, Component} from "preact";
+import {Link} from "preact-router";
 
 
-export class Navbar extends Component {
+export default class Navbar extends Component {
   constructor(props) {
     super(props);
     this.state = {
@@ -20,26 +21,12 @@ export class Navbar extends Component {
 
   render() {
     const isActiveCls = cls({"is-active": this.state.isMenuActive});
-    const brand = this.props.children[0];
-    let   items = this.props.children.slice(1);
-
-    // override menuItem's onClick handler to hide dropdown
-    items = items.map(i => {
-      const onClick = ev => {
-        this.setState({isMenuActive: false});
-        i.attributes && i.attributes.url && this.props.onChange(i.attributes.url);
-        return i.attributes && i.attributes.onClick && i.attributes.onClick(ev);
-      };
-      const isActive = i.attributes && i.attributes.url === this.props.url;
-      return cloneElement(i, {onClick, isActive});
-    });
-
     return (
       <nav class="navbar has-shadow is-fixed-top"
         role="navigation" aria-label="main navigation"
       >
         <div class="navbar-brand">
-          <div class="navbar-item">{brand}</div>
+          <div class="navbar-item">FHMP</div>
           <a class={cls("navbar-burger burger", isActiveCls)}
             role="button" aria-label="menu" aria-expanded="false"
             onClick={this.toggleBurger}
@@ -52,7 +39,10 @@ export class Navbar extends Component {
 
         <div class={cls("navbar-menu", isActiveCls)}>
           <div class="navbar-start">
-            {items}
+            <Item url="/new" icon="fas fa-seedling" text="Add Note" />
+            <Item url="/list" icon="fas fa-list" text="List" />
+            <Item url="/review" icon="fas fa-bong" text="Review" />
+            <Item url="/config" icon="fas fa-cog" text="Config" />
           </div>
         </div>
       </nav>
@@ -61,11 +51,14 @@ export class Navbar extends Component {
 }
 
 
-export const NavbarItem = props => (
-  <a class={cls("navbar-item", {"is-active": props.isActive})}
-    onClick={props.onClick}
-  >
-    {props.icon && <span class="icon"><i class={props.icon} /></span>}
-    <span>{props.text}</span>
-  </a>
-);
+const Item = props => {
+  const isActive = window.location.pathname.startsWith(props.url);
+  return (
+    <Link
+      class={cls("navbar-item", {"is-active": isActive})}
+      href={props.url}
+    >
+      <span class="icon"><i class={props.icon} /></span>
+      <span>{props.text}</span>
+    </Link>);
+};

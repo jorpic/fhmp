@@ -1,6 +1,7 @@
 import cls from "classnames";
 import {h, Component} from "preact";
 import {saveConfig, default as config} from "../config";
+import Page from "./Page";
 
 
 export default class Config extends Component {
@@ -41,7 +42,7 @@ export default class Config extends Component {
 
   render() {
     return (
-      <div class="section">
+      <Page>
         <Field
           autofocus="true"
           name="Draft save timeout (in µseconds)"
@@ -82,7 +83,7 @@ export default class Config extends Component {
             </a>
           </div>
         </nav>
-      </div>);
+      </Page>);
   }
 }
 
