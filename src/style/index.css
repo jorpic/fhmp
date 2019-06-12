@@ -7,3 +7,10 @@
 .textarea.has-extra-height {
   height: 50vh;
 }
+
+
+.list-notes .edit {
+  position: absolute;
+  right: 0.5rem;
+  top: 0.5rem;
+}

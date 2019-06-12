@@ -56,6 +56,7 @@ export default class Db {
   }
 
   getNote = id => this.idb.Notes.get(id)
+  getNotes = () => this.idb.Notes.toArray() // FIXME: paging
 
   updateNote = (id, text) => {
     const ver = Date.now().toString(36);

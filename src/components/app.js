@@ -15,6 +15,7 @@ import {h, Component} from "preact";
 import {loadConfig} from "../config";
 import {Navbar, NavbarItem} from "./Navbar";
 import Review from "./Review";
+import ListNotes from "./ListNotes";
 import EditNote from "./EditNote";
 import Config from "./Config";
 import Db from "../db";
@@ -25,7 +26,7 @@ export default class App extends Component {
     super(props);
     this.state = {
       notes: [],
-      url: "new",
+      url: "list",
       db: null,
       message: null,
     };
@@ -67,15 +68,18 @@ export default class App extends Component {
       <div>
         <Navbar url={url} onChange={this.onNavigate}>
           FHMP
-          <NavbarItem url="new" icon="fas fa-bong" text="Add Note" />
+          <NavbarItem url="new" icon="fas fa-seedling" text="Add Note" />
           <NavbarItem url="list" icon="fas fa-list" text="List" />
-          <NavbarItem url="review" icon="fas fa-seedling" text="Review" />
+          <NavbarItem url="review" icon="fas fa-bong" text="Review" />
           <NavbarItem url="config" icon="fas fa-cog" text="Config" />
         </Navbar>
         {db &&
           <div class="container">
             {url === "new" &&
               <EditNote db={db} onMessage={this.onMessage} />
+            }
+            {url === "list" &&
+              <ListNotes db={db} onMessage={this.onMessage} />
             }
             {this.state.url === "review" &&
               <Review db={db} onMessage={this.onMessage} />
