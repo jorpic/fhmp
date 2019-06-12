@@ -4,6 +4,7 @@
 import {h, Component} from "preact";
 import Markdown from "preact-markdown";
 import Page from "./Page";
+import EditBtn from "./EditBtn";
 
 
 export default class Review extends Component {
@@ -68,20 +69,28 @@ export default class Review extends Component {
       return (<div class="section">Nothing to review. Well done!</div>);
     }
 
+    const noteId = queue[0].id;
     const [question, answer] = queue[0].text.split(/\n-{4,}\n/);
 
     return (
       <Page>
-        <div class="content"><Markdown markdown={question} /></div>
+        <div class="edit-btn-container">
+          <EditBtn noteId={noteId} />
+        </div>
+        <div class="content">
+          <Markdown markdown={question} />
+        </div>
         {!isAnswerVisible &&
           <div class="field">
             <button class="button is-light is-fullwidth" onClick={this.showAnswer}>
-              Show
+              Show Answer
             </button>
           </div>
         }
         {isAnswerVisible &&
-          <div class="content"><Markdown markdown={answer} /></div>
+          <div class="content">
+            <Markdown markdown={answer} />
+          </div>
         }
         <nav class="navbar is-light is-fixed-bottom">
           <div class="navbar-brand">

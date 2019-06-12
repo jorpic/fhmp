@@ -26,12 +26,14 @@ export default class Page extends Component {
 
   render() {
     const pageContents = this.props.children.map(i =>
-      cloneElement(i, {onMessage: this.onMessage}));
+      i && i.nodeName
+        ? cloneElement(i, {onMessage: this.onMessage})
+        : i);
 
     return (
       <div>
         <Navbar />
-        <div class={"section " + (this.props.class || "")}>
+        <div class={cls("section", this.props.class)}>
           {pageContents}
         </div>
         {this.state.message &&

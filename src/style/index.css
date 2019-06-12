@@ -9,7 +9,12 @@
 }
 
 
-.list-notes .edit {
+.edit-btn-container {
+  position: relative;
+  width: 100%;
+}
+
+.button.edit-btn {
   position: absolute;
   right: 0.5rem;
   top: 0.5rem;
