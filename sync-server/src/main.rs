@@ -17,6 +17,7 @@ use warp::filters::BoxedFilter;
 struct Config {
     keys: Vec<String>,
     server_port: u16,
+    allow_origin: String,
     database_file: String,
 }
 
@@ -36,7 +37,7 @@ fn main() -> Fallible<()> {
 
     let db = init_database(&config.database_file)
         .context("Unable to open or init database")?;
-    let api = init_api(db, &config.keys).with(warp::log(""));
+    let api = init_api(db, &config).with(warp::log(""));
     warp::serve(api).run(([127, 0, 0, 1], config.server_port));
     Ok(())
 }
@@ -62,7 +63,7 @@ fn init_database(database_file: &str)
 }
 
 
-fn init_api(conn: sqlite::Connection, keys: &[String]) -> BoxedFilter<(impl Reply,)> {
+fn init_api(conn: sqlite::Connection, config: &Config) -> BoxedFilter<(impl Reply,)> {
     let db = Arc::new(Mutex::new(conn));
     let db = warp::any().map(move || db.clone());
     let put = warp::post2()
@@ -71,14 +72,15 @@ fn init_api(conn: sqlite::Connection, keys: &[String]) -> BoxedFilter<(impl Repl
         .and(warp::path::end())
         .and(warp::body::json())
         .and_then(put_notes);
-
     let get = warp::get2()
         .and(db.clone())
         .and(warp::path::param())
         .and(warp::path::end())
         .and_then(get_notes);
-
-    put.or(get).boxed()
+    let cors = warp::cors()
+        .allow_origin(config.allow_origin.as_str())
+        .allow_methods(vec!["GET", "POST", "OPTIONS"]);
+    put.or(get).with(cors).boxed()
 }
 
 

@@ -83,7 +83,7 @@ export default class Review extends Component {
         {!isAnswerVisible &&
           <div class="field">
             <button class="button is-light is-fullwidth" onClick={this.showAnswer}>
-              Show Answer
+              Show the answer
             </button>
           </div>
         }
