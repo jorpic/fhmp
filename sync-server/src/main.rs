@@ -1,4 +1,8 @@
 
+// TODO:
+//  - reject if unknow key
+//  - rsynk-like exchange protocol to save some traffic
+
 use std::{env, fs, process};
 use std::sync::{Arc, Mutex};
 use failure::{Error, Fallible, err_msg};
@@ -32,7 +36,7 @@ fn main() -> Fallible<()> {
 
     let db = init_database(&config.database_file)
         .context("Unable to open or init database")?;
-    let api = init_api(db).with(warp::log(""));
+    let api = init_api(db, &config.keys).with(warp::log(""));
     warp::serve(api).run(([127, 0, 0, 1], config.server_port));
     Ok(())
 }
@@ -43,16 +47,22 @@ fn init_database(database_file: &str)
 {
     let db = sqlite::open(database_file)?;
     db.execute(
-        "create table if not exists notes(key text not null, json text not null)"
-    )?;
-    db.execute(
-        "create table if not exists reviews(key text not null, json text not null)"
+        "create table if not exists notes(
+            key text not null,
+            json text not null);
+        create unique index if not exists notes_ix
+            on notes(key, json_extract(json, '$.id'));
+        create table if not exists reviews(
+            key text not null,
+            json text not null);
+        create unique index if not exists reviews_ix
+            on reviews(key, json_extract(json, '$.id'));"
     )?;
     Ok(db)
 }
 
 
-fn init_api(conn: sqlite::Connection) -> BoxedFilter<(impl Reply,)> {
+fn init_api(conn: sqlite::Connection, keys: &[String]) -> BoxedFilter<(impl Reply,)> {
     let db = Arc::new(Mutex::new(conn));
     let db = warp::any().map(move || db.clone());
     let put = warp::post2()
@@ -76,7 +86,7 @@ type Db = Arc<Mutex<sqlite::Connection>>;
 
 fn get_notes(db: Db, key: String) -> Result<impl Reply, Rejection> {
     get_notes_aux(db, key)
-        .map_err(|e| warp::reject::custom(e))
+        .map_err(warp::reject::custom)
 }
 
 fn get_notes_aux(db: Db, key: String) -> Fallible<impl Reply> {
@@ -97,14 +107,56 @@ fn get_notes_aux(db: Db, key: String) -> Fallible<impl Reply> {
 
 
 fn put_notes(db: Db, key: String,  data: serde_json::Value) -> Result<impl Reply, Rejection> {
-    let reviews = &data["reviews"].as_array().unwrap();
+    put_notes_aux(db, key, data)
+        .map_err(warp::reject::custom)
+}
+
+fn put_notes_aux(db: Db, key: String, data: serde_json::Value) -> Fallible<impl Reply> {
+    let reviews = &data["reviews"].as_array().unwrap(); // FIXME: .ok_or(err)?;
     let notes = &data["notes"].as_array().unwrap();
+
+    let db = db.lock()
+        .map_err(|_| err_msg("db.lock() failed"))?;
+    let mut q = db.prepare("insert or ignore into reviews values (?, ?)")?;
+    // NB. We need to filter out reviews and notes without `id`
+    // because unique index does not work if `json_extract(..) == NULL`.
+    // FIXME: Should we drop an error in case we found such a review?
+    for r in reviews.iter().filter(|r| r["id"].as_str().is_some()) {
+        q.reset()?;
+        q.bind(1, &key[..])?;
+        q.bind(2, &r.to_string()[..])?;
+        while let sqlite::State::Row = q.next()? { };
+    }
+
+    let mut q = db.prepare("
+        insert or replace into notes (key, json)
+            values (
+                ?,
+                coalesce(
+                    (select json from notes
+                        where key = ?
+                          and json_extract(json, '$.id') = ?
+                          and json_extract(json, '$.ver') >= ?),
+                    ?)
+            )")?;
+    for n in notes.iter() {
+        if let Some(id) = n["id"].as_str() {
+            if let Some(ver) = n["ver"].as_str() {
+                q.reset()?;
+                q.bind(1, &key[..])?;
+                q.bind(2, &key[..])?;
+                q.bind(3, &id[..])?;
+                q.bind(4, &ver[..])?;
+                q.bind(5, &n.to_string()[..])?;
+                while let sqlite::State::Row = q.next()? { };
+            }
+        }
+    }
+
     Ok(warp::reply())
 }
 
-
 // Helper stuff
-
 fn select_json(db: &Db, query: &str, key: &str)
     -> Fallible<serde_json::Value>
 {
@@ -121,8 +173,7 @@ fn select_json(db: &Db, query: &str, key: &str)
     Ok(serde_json::Value::Array(values))
 }
 
-trait WithContext<T>
-{
+trait WithContext<T> {
     fn context(self, msg: &str) -> Result<T, failure::Context<&str>>;
 }
 
