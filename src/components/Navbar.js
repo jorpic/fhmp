@@ -43,6 +43,7 @@ export default class Navbar extends Component {
             <Item url="/list" icon="fas fa-list" text="List" />
             <Item url="/review" icon="fas fa-bong" text="Review" />
             <Item url="/config" icon="fas fa-cog" text="Config" />
+            <Item url="/sync" icon="fas fa-sync" text="Sync" />
           </div>
         </div>
       </nav>

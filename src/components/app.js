@@ -19,6 +19,7 @@ import Review from "./Review";
 import ListNotes from "./ListNotes";
 import EditNote from "./EditNote";
 import Config from "./Config";
+import Sync from "./Sync";
 import Db from "../db";
 
 
@@ -29,6 +30,7 @@ export default class App extends Component {
       db: null,
     };
   }
+
 
   componentDidMount() {
     const db = new Db();
@@ -63,6 +65,7 @@ export default class App extends Component {
         <EditNote path="/edit/:noteId" db={db} />
         <Review path="/review" db={db} />
         <Config path="/config" db={db} />
+        <Sync path="/sync" db={db} />
       </Router>
     );
   }

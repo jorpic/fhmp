@@ -38,7 +38,7 @@ fn main() -> Fallible<()> {
     let db = init_database(&config.database_file)
         .context("Unable to open or init database")?;
     let api = init_api(db, &config).with(warp::log(""));
-    warp::serve(api).run(([127, 0, 0, 1], config.server_port));
+    warp::serve(api).run(([0, 0, 0, 0], config.server_port));
     Ok(())
 }
 

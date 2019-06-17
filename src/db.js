@@ -51,8 +51,7 @@ export default class Db {
       text,
       ver: now36, // encoded timestamp as note version
     };
-    return this.idb.Notes.add(note)
-      .then(() => this.idb.Drafts.clear());
+    return this.idb.Notes.add(note);
   }
 
   getNote = id => this.idb.Notes.get(id)
@@ -90,6 +89,34 @@ export default class Db {
     return this.idb.Notes.update(note.id, {lastReview: now.toISOString(), nextReview})
       .then(() => this.idb.Reviews.add(review));
   }
+
+
+  // Sync to server
+  pushToServer = () =>
+    this.idb.Notes.toArray().then(
+      notes => this.idb.Reviews.toArray().then(
+        reviews =>
+          fetch(config.SYNC_SERVER_URL + "/" + config.CLIENT_KEY, {
+            method: "POST",
+            mode: "cors",
+            headers: {
+              "Content-Type": "application/json"
+            },
+            body: JSON.stringify({notes, reviews})
+          })
+          .then(rsp => {
+            if (!rsp.ok) { } // FIXME: throw
+          })
+      )
+    )
+
+  pullFromServer = () =>
+    fetch(config.SYNC_SERVER_URL + "/" + config.CLIENT_KEY)
+      .then(rsp => rsp.json())
+      .then(rsp =>
+        this.idb.Notes.bulkPut(rsp.notes)
+          .then(() => this.idb.Reviews.bulkPut(rsp.reviews))
+      )
 }
 
 
