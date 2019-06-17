@@ -19,12 +19,8 @@ export default class Config extends Component {
 
 
   onSave = () => saveConfig(this.props.db, this.state)
-    .then(() => this.props.onMessage({
-      success: true,
-      msg: "Config was sucessfully saved to storage."}))
-    .catch(() => this.props.onMessage({
-      error: true,
-      msg: "Failed to save config to storage."}))
+    .then(this.page.success("Config was sucessfully saved to storage."))
+    .catch(this.page.error("Failed to save config to storage."))
 
 
   isValidNumber = str => {
@@ -42,7 +38,7 @@ export default class Config extends Component {
 
   render() {
     return (
-      <Page>
+      <Page ref={ref => this.page = ref}>
         <Field
           autofocus="true"
           name="Draft save timeout (in µseconds)"

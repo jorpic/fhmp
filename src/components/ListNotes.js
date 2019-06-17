@@ -21,17 +21,13 @@ export default class ListNotes extends Component {
     };
     this.props.db.getNotes()
       .then(ns => this.setState({notes: ns.map(transform)}))
-      .catch(err => this.props.onMessage({
-        error: true,
-        err,
-        msg: "Failed to load notes from local storage."
-      }));
+      .catch(this.page.error("Failed to load notes from local storage."));
   }
 
 
   render() {
     return (
-      <Page>
+      <Page ref={ref => this.page = ref}>
         {this.state.notes.map(n =>
           <article class="notification edit-btn-container">
             {n.question}

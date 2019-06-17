@@ -24,15 +24,11 @@ export default class Review extends Component {
     // to see skipped notes (and we will get them if the queue is refetched).
     this.props.db.getNotesToReview()
       .then(queue => this.setState({queue}))
-      .catch(err => this.props.onMessage({
-        error: true,
-        err,
-        msg: (
+      .catch(this.page.error(
           <span>
-            We are failed to fetch notes for review. <br />
-            {err}
-          </span>)
-      }));
+            We failed to fetch notes for review. <br />
+          </span>
+      ));
   }
 
 
@@ -45,15 +41,10 @@ export default class Review extends Component {
   })
 
 
-  review = result => {
+  review = result =>
     this.props.db.addReview(this.state.queue[0], result)
       .then(this.skip)
-      .catch(err => this.props.onMessage({
-        warning: true,
-        err,
-        msg: (<span>Failed to save your review: {err}</span>),
-      }));
-  }
+      .catch(this.page.warning("Failed to save your review"))
   hard = () => this.review("hard")
   easy = () => this.review("easy")
 
@@ -73,7 +64,7 @@ export default class Review extends Component {
     const [question, answer] = queue[0].text.split(/\n-{4,}\n/);
 
     return (
-      <Page>
+      <Page ref={ref => this.page = ref}>
         <div class="edit-btn-container">
           <EditBtn noteId={noteId} />
         </div>

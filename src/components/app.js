@@ -48,9 +48,6 @@ export default class App extends Component {
   }
 
 
-  onNavigate = url => this.setState({url})
-
-
   render() {
     const {db, url, message} = this.state;
     if (!db) {

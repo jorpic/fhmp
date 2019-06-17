@@ -15,28 +15,29 @@ export default class Page extends Component {
 
 
   // Show important messages on a modal form.
-  onMessage = message => {
+  message = message => {
     if (message.error) console.error(message);
     else if (message.warning) console.warn(message);
     this.setState({message});
   }
 
+  success = msg => () => this.message({success: true, msg})
+  warning = msg => err => this.message({warning: true, err, msg})
+  error = msg => err => this.message({error: true, err, msg})
+
+
   clearMessage = () => this.setState({message: null})
 
 
   render() {
-    const pageContents = this.props.children.map(i =>
-      i && i.nodeName
-        ? cloneElement(i, {onMessage: this.onMessage})
-        : i);
-
+    const {message} = this.state;
     return (
       <div>
         <Navbar />
         <div class={cls("section", this.props.class)}>
-          {pageContents}
+          {this.props.children}
         </div>
-        {this.state.message &&
+        {message &&
           <div class="modal is-active">
             <div class="modal-background" onClick={this.clearMessage} />
             <div class="modal-content" onClick={this.clearMessage}>

@@ -52,11 +52,7 @@ export default class EditNote extends Component {
   componentWillUnmount() {
     clearInterval(this.draftSaveLoop);
     this.props.db.saveDraft(this.props.noteId, this.state.text)
-      .catch(err => this.props.onMessage({
-        warning: true,
-        err,
-        msg: "Failed to save the draft"
-      }));
+      .catch(this.page.warning("Failed to save the draft"));
   }
 
 
@@ -75,20 +71,14 @@ export default class EditNote extends Component {
       .then(() => {
         this.props.db.dropDraft(this.props.noteId);
         this.setState({draftSaved: true, text: ""});
-        this.props.onMessage({
-          success: true,
-          msg: "Your note was saved successfully."
-        });
+        this.page.success("Your note was saved successfully.")();
       })
-      .catch(err => this.props.onMessage({
-        error: true,
-        err,
-        msg: (
+      .catch(this.page.error(
           <span>
             Sorry! <br />
             We could not save your note to the local storage.
-          </span>)
-      }));
+          </span>
+      ));
   }
 
 
@@ -98,7 +88,7 @@ export default class EditNote extends Component {
       {"is-success": this.state.draftSaved});
 
     return (
-      <Page>
+      <Page ref={ref => this.page = ref}>
         <div class="field">
           {this.state.draft && (
             <article class="message is-warning">
