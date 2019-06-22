@@ -24,11 +24,11 @@ export default class Review extends Component {
     // to see skipped notes (and we will get them if the queue is refetched).
     this.props.db.getNotesToReview()
       .then(queue => this.setState({queue}))
-      .catch(this.page.error(
+      .catch(err => this.page.error(
           <span>
             We failed to fetch notes for review. <br />
           </span>
-      ));
+      )(err));
   }
 
 

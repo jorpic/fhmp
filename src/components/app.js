@@ -13,6 +13,7 @@ import "@fortawesome/fontawesome-free/css/fontawesome";
 import cls from "classnames";
 import {h, Component} from "preact";
 import {Router, route} from "preact-router";
+import {createHashHistory} from "history";
 import {loadConfig} from "../config";
 
 import Review from "./Review";
@@ -58,7 +59,7 @@ export default class App extends Component {
       return "Loading...";
     }
     return (
-      <Router>
+      <Router history={createHashHistory()}>
         <Default path="/" to="/list" />
         <ListNotes path="/list" db={db} />
         <EditNote path="/new" db={db} />
