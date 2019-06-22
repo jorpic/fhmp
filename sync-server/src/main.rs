@@ -17,7 +17,6 @@ use warp::filters::BoxedFilter;
 struct Config {
     keys: Vec<String>,
     server_port: u16,
-    allow_origin: String,
     database_file: String,
 }
 
@@ -38,7 +37,7 @@ fn main() -> Fallible<()> {
     let db = init_database(&config.database_file)
         .context("Unable to open or init database")?;
     let api = init_api(db, &config).with(warp::log(""));
-    warp::serve(api).run(([0, 0, 0, 0], config.server_port));
+    warp::serve(api).run(([127, 0, 0, 1], config.server_port));
     Ok(())
 }
 
@@ -77,10 +76,7 @@ fn init_api(conn: sqlite::Connection, config: &Config) -> BoxedFilter<(impl Repl
         .and(warp::path::param())
         .and(warp::path::end())
         .and_then(get_notes);
-    let cors = warp::cors()
-        .allow_origin(config.allow_origin.as_str())
-        .allow_methods(vec!["GET", "POST", "OPTIONS"]);
-    put.or(get).with(cors).boxed()
+    put.or(get).boxed()
 }
 
 
@@ -186,4 +182,3 @@ impl<T, E> WithContext<T> for Result<T, E>
         self.map_err(|e| e.context(msg))
     }
 }
-
