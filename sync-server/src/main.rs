@@ -8,7 +8,8 @@ use std::sync::{Arc, Mutex};
 use failure::{Error, Fallible, err_msg};
 use log::info;
 use env_logger::Env;
-use serde::Deserialize;
+use serde::{Serialize, Deserialize};
+use serde_json::Value;
 use warp::{Filter, Reply, Rejection};
 use warp::filters::BoxedFilter;
 
@@ -104,14 +105,30 @@ fn get_notes_aux(db: Db, key: String) -> Fallible<impl Reply> {
 }
 
 
-fn put_notes(db: Db, key: String,  data: serde_json::Value) -> Result<impl Reply, Rejection> {
+
+fn put_notes(db: Db, key: String,  data: Value) -> Result<impl Reply, Rejection> {
     put_notes_aux(db, key, data)
         .map_err(warp::reject::custom)
 }
 
-fn put_notes_aux(db: Db, key: String, data: serde_json::Value) -> Fallible<impl Reply> {
-    let reviews = &data["reviews"].as_array().unwrap(); // FIXME: .ok_or(err)?;
-    let notes = &data["notes"].as_array().unwrap();
+#[derive(Serialize, Deserialize)]
+#[allow(non_snake_case)]
+struct Note {
+    id: String,
+    text: String,
+    ver: String,
+    lastReview: String,
+    nextReview: String,
+}
+
+#[derive(Serialize, Deserialize)]
+struct Payload {
+    reviews: Vec<Value>,
+    notes: Vec<Note>,
+}
+
+fn put_notes_aux(db: Db, key: String, data: Value) -> Fallible<impl Reply> {
+    let Payload {reviews, notes} = serde_json::from_value(data)?;
 
     let db = db.lock()
         .map_err(|_| err_msg("db.lock() failed"))?;
@@ -119,56 +136,68 @@ fn put_notes_aux(db: Db, key: String, data: serde_json::Value) -> Fallible<impl 
     // NB. We need to filter out reviews and notes without `id`
     // because unique index does not work if `json_extract(..) == NULL`.
     // FIXME: Should we drop an error in case we found such a review?
-    for r in reviews.iter().filter(|r| r["id"].as_str().is_some()) {
+    for x in reviews.iter().filter(|x| x["id"].as_str().is_some()) {
         q.reset()?;
         q.bind(1, &key[..])?;
-        q.bind(2, &r.to_string()[..])?;
+        q.bind(2, &x.to_string()[..])?;
         while let sqlite::State::Row = q.next()? { };
     }
 
-    let mut q = db.prepare("
-        insert or replace into notes (key, json)
-            values (
-                ?,
-                coalesce(
-                    (select json from notes
-                        where key = ?
-                          and json_extract(json, '$.id') = ?
-                          and json_extract(json, '$.ver') >= ?),
-                    ?)
-            )")?;
-    for n in notes.iter() {
-        if let Some(id) = n["id"].as_str() {
-            if let Some(ver) = n["ver"].as_str() {
-                q.reset()?;
-                q.bind(1, &key[..])?;
-                q.bind(2, &key[..])?;
-                q.bind(3, &id[..])?;
-                q.bind(4, &ver[..])?;
-                q.bind(5, &n.to_string()[..])?;
-                while let sqlite::State::Row = q.next()? { };
+    let mut select = db.prepare(
+        "select json from notes
+            where key = ?
+              and json_extract(json, '$.id') = ?"
+    )?;
+    let mut insert = db.prepare(
+        "insert or replace into notes (key, json) values (?, ?)"
+    )?;
+
+    for x in notes.iter() {
+        select.reset()?;
+        select.bind(1, &key[..])?;
+        select.bind(2, &x.id[..])?;
+        while let sqlite::State::Row = select.next()? {
+            let json = select.read::<String>(0)?;
+            let mut note: Note = serde_json::from_str(&json)?;
+            let mut needs_update = false;
+            if note.ver < x.ver {
+                note.text = x.text.clone();
+                note.ver = x.ver.clone();
+                needs_update = true;
             }
-        }
+            if note.lastReview < x.lastReview {
+                note.nextReview = x.nextReview.clone();
+                note.lastReview = x.lastReview.clone();
+                needs_update = true;
+            }
+            if needs_update {
+                let json = serde_json::to_string(&note)?;
+                insert.reset()?;
+                insert.bind(1, &key[..])?;
+                insert.bind(2, &json[..])?;
+                while let sqlite::State::Row = insert.next()? { }
+            }
+        };
     }
 
     Ok(warp::reply())
 }
 
+
+
 // Helper stuff
-fn select_json(db: &Db, query: &str, key: &str)
-    -> Fallible<serde_json::Value>
-{
+fn select_json(db: &Db, query: &str, key: &str) -> Fallible<Value> {
     let db = db.lock()
         .map_err(|_| err_msg("db.lock() failed"))?;
-    let mut from_notes = db.prepare(query)?;
-    from_notes.bind(1, key)?;
+    let mut q = db.prepare(query)?;
+    q.bind(1, key)?;
     let mut values = Vec::new();
-    while let sqlite::State::Row = from_notes.next()? {
-        let text = from_notes.read::<String>(0)?;
+    while let sqlite::State::Row = q.next()? {
+        let text = q.read::<String>(0)?;
         let json = serde_json::from_str(&text)?;
         values.push(json);
     }
-    Ok(serde_json::Value::Array(values))
+    Ok(Value::Array(values))
 }
 
 trait WithContext<T> {

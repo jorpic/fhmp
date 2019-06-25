@@ -9,10 +9,27 @@ export default class Db {
     let ver = 0;
     this.idb = new Dexie("fhmp");
     this.idb.version(++ver).stores({
+      // Config must contain single record.
+      // We use hardcoded id=0 to access it.
       Config: "id",
+
+      // Drafts are indexed by note id.
+      // It is not possible to have more than one draft for a note.
       Drafts: "id", // text, timestamp
-      Notes: "id,nextReview", // lastReview,text
-      Reviews: "time", // note,result // FIXME: random id for reviews
+
+      // Notes are indexed by pseudorandom id (it is actually a timestamp with
+      // some random bytes added).
+      // Each note has:
+      //  - `text`
+      //  - `ver` — a version that increased on note text update
+      //  - `lastReview` — timestamp of the last review
+      //  - `nextReview` — timestamp of the next scheduled review
+      Notes: "id,nextReview",
+
+      // Reviews are stored for future usage (e.g. analysis and reports).
+      // We don't need to access them yet, the index on `time` is just to be
+      // able to use `bulkPut` in `pullFromServer`.
+      Reviews: "time",
     });
     console.assert(ver === DB_VERSION, "DB version mismatch");
   }
@@ -59,7 +76,7 @@ export default class Db {
 
   updateNote = (id, text) => {
     const ver = Date.now().toString(36);
-    return this.idb.Notes.put({id: id, text, ver});
+    return this.idb.Notes.update(id, {text, ver});
   }
 
 
@@ -105,7 +122,7 @@ export default class Db {
             body: JSON.stringify({notes, reviews})
           })
           .then(rsp => {
-            if (!rsp.ok) { } // FIXME: throw
+            if (!rsp.ok) { throw rsp; } // FIXME: handle this somehow
           })
       )
     )
