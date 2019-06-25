@@ -24,43 +24,27 @@ self.__precacheManifest = (self.__precacheManifest || []).concat([
     "url": "/fhmp/assets/icons/mstile-150x150.png"
   },
   {
-    "revision": "6eac1dbbf021739d7fc0",
+    "revision": "701b36a8c8f48255b3a6",
     "url": "/fhmp/bundle.4d10e.css"
   },
   {
-    "revision": "6eac1dbbf021739d7fc0",
-    "url": "/fhmp/bundle.6eac1.js"
+    "revision": "701b36a8c8f48255b3a6",
+    "url": "/fhmp/bundle.701b3.js"
   },
   {
-    "revision": "1a8c40e3d87517dd27e59e1596529c81",
-    "url": "/fhmp/config/index.html"
-  },
-  {
-    "revision": "9503444d27bbf1eb02b89b9f9193a6bc",
+    "revision": "8d8fa7c078a3585f1538ba68f63ab5d4",
     "url": "/fhmp/index.html"
-  },
-  {
-    "revision": "c6d49d05313515d677490d15624f96df",
-    "url": "/fhmp/list/index.html"
-  },
-  {
-    "revision": "001486b9dba2dcd17a866df680ac5b00",
-    "url": "/fhmp/new/index.html"
   },
   {
     "revision": "8183d60fa028bc9266f1",
     "url": "/fhmp/polyfills.8183d.js"
   },
   {
-    "revision": "d8c8f8717bbe0d9db571ca10a2632337",
-    "url": "/fhmp/review/index.html"
-  },
-  {
     "revision": "13b82ed03d648451c57be206f75f0216",
     "url": "/fhmp/sw-debug.js"
   },
   {
-    "revision": "d71756010e4c2adbf869b438e01c47da",
+    "revision": "c94c470507e2a0446048d4cfb667e8a8",
     "url": "/fhmp/sw-esm.js"
   },
   {
