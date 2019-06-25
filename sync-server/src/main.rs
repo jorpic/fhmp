@@ -133,10 +133,7 @@ fn put_notes_aux(db: Db, key: String, data: Value) -> Fallible<impl Reply> {
     let db = db.lock()
         .map_err(|_| err_msg("db.lock() failed"))?;
     let mut q = db.prepare("insert or ignore into reviews values (?, ?)")?;
-    // NB. We need to filter out reviews and notes without `id`
-    // because unique index does not work if `json_extract(..) == NULL`.
-    // FIXME: Should we drop an error in case we found such a review?
-    for x in reviews.iter().filter(|x| x["id"].as_str().is_some()) {
+    for x in reviews.iter() {
         q.reset()?;
         q.bind(1, &key[..])?;
         q.bind(2, &x.to_string()[..])?;
