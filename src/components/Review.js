@@ -52,13 +52,17 @@ export default class Review extends Component {
   render() {
     const {queue, isAnswerVisible} = this.state;
 
-    if (queue === null) {
-      return (<div class="section">Fetching notes to review…</div>);
-    }
+    if (queue === null) return (
+      <Page ref={ref => this.page = ref}>
+        <div class="section">Fetching notes to review…</div>
+      </Page>
+    );
 
-    if (queue.length === 0) {
-      return (<div class="section">Nothing to review. Well done!</div>);
-    }
+    if (queue.length === 0) return (
+      <Page ref={ref => this.page = ref}>
+        <div class="section">Nothing to review. Well done!</div>
+      </Page>
+    );
 
     const noteId = queue[0].id;
     const [question, answer] = queue[0].text.split(/\n-{4,}\n/);
