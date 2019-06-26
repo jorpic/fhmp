@@ -70,7 +70,7 @@ export default class EditNote extends Component {
     action()
       .then(() => {
         this.props.db.dropDraft(this.props.noteId);
-        this.setState({draftSaved: true, text: ""});
+        this.props.noteId || this.setState({draftSaved: true, text: ""});
         this.page.success("Your note was saved successfully.")();
       })
       .catch(this.page.error(
