@@ -83,10 +83,18 @@ export default class Db {
   // Fetch notes to review.
   getNotesToReview = () => {
     const now = new Date().toISOString();
-    return this.idb.Notes.where("nextReview")
+    return this.idb.Notes
+      .where("nextReview")
       .below(now)
       .limit(config.QUEUE_LIMIT)
       .toArray()
+      .then(shuffle);
+  }
+
+  getRandomNotes = () => {
+    return this.idb.Notes
+      .toCollection()
+      .sortBy("lastReview")
       .then(shuffle);
   }
 

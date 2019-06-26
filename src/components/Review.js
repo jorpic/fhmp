@@ -32,6 +32,16 @@ export default class Review extends Component {
   }
 
 
+  randomQueue = () =>
+    this.props.db.getRandomNotes()
+      .then(queue => this.setState({queue}))
+      .catch(err => this.page.error(
+          <span>
+            We failed to fetch notes for review. <br />
+          </span>
+      )(err))
+
+
   showAnswer = () => this.setState({isAnswerVisible: true})
 
 
@@ -60,7 +70,12 @@ export default class Review extends Component {
 
     if (queue.length === 0) return (
       <Page ref={ref => this.page = ref}>
-        <div class="section">Nothing to review. Well done!</div>
+        <div class="section">
+          <p>Nothing to review. Well done!</p>
+          <button class="button is-warning" onClick={this.randomQueue}>
+            Review random notes
+          </button>
+        </div>
       </Page>
     );
 
