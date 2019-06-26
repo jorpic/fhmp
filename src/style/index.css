@@ -14,6 +14,10 @@
   width: 100%;
 }
 
+.notification.is-clickable {
+  cursor: pointer;
+}
+
 .button.edit-btn {
   position: absolute;
   right: 0.5rem;

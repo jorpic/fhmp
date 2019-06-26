@@ -80,3 +80,9 @@ export function nextReviewInterval(expectedInterval, actualInterval, result) {
 
   console.error("Unexpected review result", result);
 }
+
+
+// Convert JSON timestamp to human readable string.
+export function dateToString(date) {
+  return new Date(date).toLocaleString('en-GB', {timeZone: 'Europe/Moscow'});
+}
