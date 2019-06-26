@@ -40,6 +40,11 @@ export default class Config extends Component {
     return (
       <Page ref={ref => this.page = ref}>
         <Field
+          name="Deployed revision hash"
+          value={COMMITHASH}
+          disabled={true}
+        />
+        <Field
           autofocus="true"
           name="Draft save timeout (in µseconds)"
           value={this.state.DRAFT_SAVE_TIMEOUT}
@@ -84,7 +89,7 @@ export default class Config extends Component {
 }
 
 
-function Field({name, value, valid, onInput, autofocus}) {
+function Field({name, value, valid, onInput, autofocus, disabled}) {
   const err = valid && valid(value);
   return (
     <div class="field">
@@ -95,6 +100,7 @@ function Field({name, value, valid, onInput, autofocus}) {
           value={value}
           onInput={onInput}
           autofocus={autofocus}
+          disabled={disabled}
         />
       </div>
       <p class={cls("help", {"is-danger": err})}>{err}</p>
