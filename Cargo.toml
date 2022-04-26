@@ -1,2 +1,2 @@
 [workspace]
-members = ["sync-server"]
+members = ["sync-server", "fhmp-cli"]
