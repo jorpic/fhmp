@@ -9,3 +9,6 @@ config = {version = "0.13", default-features = false, features = ["toml"]}
 chrono = {version = "0.4", features = ["serde"]}
 serde = {version = "1.0", features = ["derive"]}
 serde_yaml = {version = "0.8"}
+serde_json = {version = "1.0"}
+sqlite = {version = "0.26"}
+uuid = {version = "1.0", features = ["v4", "fast-rng"]}
