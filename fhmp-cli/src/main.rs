@@ -22,14 +22,56 @@ struct Note {
     text: Option<String>
 }
 
+#[derive(Serialize,Deserialize)]
+struct NoteData {
+    card: Option<Vec<String>>,
+    text: Option<String>
+}
+
 fn main() -> Result<()> {
+    let args: Vec<String> = env::args().collect();
+    match &args[..] {
+        [_, cmd] => match cmd.as_str() {
+            "add" => cmd_add(),
+            "rnd" => cmd_rnd(),
+            "dump" => cmd_dump(),
+            _ => anyhow::bail!("Invalid command '{}'", cmd),
+        },
+        _ => {
+            println!("Usage:");
+            println!("\tfhmp add − read YAML from stdin.");
+            println!("\tfhmp rnd − review random note from DB.");
+            anyhow::bail!("Invalid arguments.");
+        }
+    }
+}
+
+fn cmd_add() -> Result<()> {
     let cfg = read_config()
         .context("Reading config")?;
-    let notes = read_notes(io::stdin())
-        .context("Reading notes from stdin")?;
     let db = init_db(&cfg.db_path)
         .context("Opening database file")?;
+    let notes = read_notes(io::stdin())
+        .context("Reading notes from stdin")?;
     insert_notes(&db, &notes)
+}
+
+fn cmd_rnd() -> Result<()> {
+    let cfg = read_config()
+        .context("Reading config")?;
+    let _db = init_db(&cfg.db_path)
+        .context("Opening database file")?;
+    // FIXME
+    Ok(())
+}
+
+fn cmd_dump() -> Result<()> {
+    let cfg = read_config()
+        .context("Reading config")?;
+    let _db = init_db(&cfg.db_path)
+        .context("Opening database file")?;
+    // FIXME
+    Ok(())
 }
 
 fn read_config() -> Result<CliConfig> {
@@ -82,10 +124,9 @@ fn insert_notes(
     for n in notes.iter() {
         q.reset()?;
         let id = Uuid::new_v4().to_string();
-        let ctime = match n.ctime {
-            Some(ctime) => ctime.to_rfc3339(),
-            None => Local::now().to_rfc3339(),
-        };
+        let ctime = n.ctime
+            .unwrap_or_else(|| Local::now())
+            .to_rfc3339();
         let data = serde_json::to_string(&n)?;
 
         q.bind(1, id.as_str())?;
