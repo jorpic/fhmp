@@ -24,8 +24,8 @@ pub fn cmd_add() -> Result<()> {
         .context("Opening database file")?;
     let notes = read_notes(io::stdin())
         .context("Reading notes from stdin")?;
-    let (_errors, notes) = check_notes(&notes);
-    // FIXME: check errors
+    let notes = check_notes(&notes)
+        .context("Invalid note format")?;
     insert_notes(&db, &notes)
 }
 
@@ -44,39 +44,42 @@ fn read_notes<T: io::Read>(r: T) -> Result<Vec<InputNote>> {
     }
 }
 
-fn check_notes(notes: &[InputNote]) -> (Vec<anyhow::Error>, Vec<DbNote>)
+fn check_notes(notes: &[InputNote]) -> Result<Vec<DbNote>>
 {
-    let mut db_notes = Vec::new();
-    let mut errors = Vec::new();
+    let mut res = Vec::new();
+    let mut err = Vec::new();
 
     for n in notes.iter() {
         let mut data = serde_json::Map::new();
 
         if n.card == None && n.text == None {
-            errors.push(
-                anyhow!("`card` or `text` must present")
-            );
+            err.push("required fields `card` or `text` are not found");
         } else if n.card != None && n.text != None {
-            errors.push(
-                anyhow!("both `card` and `text` are present")
-            );
-        } else if let Some(card) = &n.card {
-            data.insert("card".to_string(), json!(card));
-        } else if let Some(text) = &n.text {
-            data.insert("text".to_string(), json!(text));
-        }
-
-        // FIXME: update record if existing uuid provided
-        db_notes.push(
-            DbNote {
-                uuid: Uuid::new_v4(),
-                tags: "FIXME".to_string(),
-                ctime: n.ctime.unwrap_or_else(Local::now),
-                data: json!(data),
+            err.push("both `card` and `text` are present");
+        } else {
+            if let Some(card) = &n.card {
+                data.insert("card".to_string(), json!(card));
+            } else if let Some(text) = &n.text {
+                data.insert("text".to_string(), json!(text));
             }
-        )
+
+            res.push(
+                DbNote {
+                    uuid: Uuid::new_v4(),
+                    tags: n.tags.clone(), // FIXME: normalize tags somehow?
+                    ctime: n.ctime.unwrap_or_else(Local::now),
+                    data: json!(data),
+                }
+            )
+        }
     }
 
-    (errors, db_notes)
+    if err.is_empty() {
+        Ok(res)
+    } else {
+        let err: String = err.iter()
+            .map(|s| "- ".to_string() + s + "\n")
+            .collect();
+        Err(anyhow!(err))
+    }
 }
-
