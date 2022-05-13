@@ -1,11 +1,11 @@
 use std::{io, env, path::PathBuf};
 
-use anyhow::{Context, Result};
+use anyhow::{anyhow, Context, Result};
 use config::{Config, File, FileFormat};
 
 use chrono::{DateTime, Local};
 use serde::{Serialize, Deserialize};
-use serde_yaml::Value;
+use serde_json::json;
 
 use uuid::Uuid;
 
@@ -15,17 +15,19 @@ struct CliConfig {
 }
 
 #[derive(Serialize,Deserialize)]
-struct Note {
+struct InputNote {
     tags: String,
     ctime: Option<DateTime<Local>>,
     card: Option<Vec<String>>,
     text: Option<String>
 }
 
-#[derive(Serialize,Deserialize)]
-struct NoteData {
-    card: Option<Vec<String>>,
-    text: Option<String>
+#[derive(Serialize)]
+struct DbNote {
+    uuid: String,
+    ctime: DateTime<Local>,
+    tags: String,
+    data: serde_json::Value
 }
 
 fn main() -> Result<()> {
@@ -53,6 +55,8 @@ fn cmd_add() -> Result<()> {
         .context("Opening database file")?;
     let notes = read_notes(io::stdin())
         .context("Reading notes from stdin")?;
+    let (_errors, notes) = check_notes(&notes);
+    // FIXME: check errors
     insert_notes(&db, &notes)
 }
 
@@ -88,19 +92,55 @@ fn read_config() -> Result<CliConfig> {
         .context("Parsing config")
 }
 
-fn read_notes<T: std::io::Read>(r: T) -> Result<Vec<Note>> {
-    let val: Value = serde_yaml::from_reader(r)?;
+fn read_notes<T: std::io::Read>(r: T) -> Result<Vec<InputNote>> {
+    let val = serde_yaml::from_reader(r)?;
     match val {
-        Value::Sequence(_) =>
-            Vec::<Note>::deserialize(val)
+        serde_yaml::Value::Sequence(_) =>
+            Vec::<InputNote>::deserialize(val)
                 .context("Parsing a sequence of notes from YAML"),
-        Value::Mapping(_) => Ok(vec![
-            Note::deserialize(val)
+        serde_yaml::Value::Mapping(_) => Ok(vec![
+            InputNote::deserialize(val)
                 .context("Parsing a note from YAML")?
 
         ]),
         _ => anyhow::bail!("Object or sequence of objects expected.")
     }
+}
+
+fn check_notes(notes: &[InputNote]) -> (Vec<anyhow::Error>, Vec<DbNote>)
+{
+    let mut db_notes = Vec::new();
+    let mut errors = Vec::new();
+
+    for n in notes.iter() {
+        let mut data = serde_json::Map::new();
+
+        if n.card == None && n.text == None {
+            errors.push(
+                anyhow!("`card` or `text` must present")
+            );
+        } else if n.card != None && n.text != None {
+            errors.push(
+                anyhow!("both `card` and `text` are present")
+            );
+        } else if let Some(card) = &n.card {
+            data.insert("card".to_string(), json!(card));
+        } else if let Some(text) = &n.text {
+            data.insert("text".to_string(), json!(text));
+        }
+
+        // FIXME: update record if existing uuid provided
+        db_notes.push(
+            DbNote {
+                uuid: Uuid::new_v4().to_string(),
+                tags: "FIXME".to_string(),
+                ctime: n.ctime.unwrap_or_else(|| Local::now()),
+                data: json!(data),
+            }
+        )
+    }
+
+    (errors, db_notes)
 }
 
 fn init_db(db_path: &str) -> Result<sqlite::Connection> {
@@ -109,7 +149,8 @@ fn init_db(db_path: &str) -> Result<sqlite::Connection> {
         "create table if not exists notes(
             uuid text not null,
             ctime text not null,
-            json text not null);
+            tags text not null,
+            data json not null);
         "
     )?;
     Ok(db)
@@ -118,19 +159,14 @@ fn init_db(db_path: &str) -> Result<sqlite::Connection> {
 
 fn insert_notes(
     db: &sqlite::Connection,
-    notes: &[Note]
+    notes: &[DbNote]
 ) -> Result<()> {
     let mut q = db.prepare("insert into notes values (?, ?, ?)")?;
     for n in notes.iter() {
         q.reset()?;
-        let id = Uuid::new_v4().to_string();
-        let ctime = n.ctime
-            .unwrap_or_else(|| Local::now())
-            .to_rfc3339();
-        let data = serde_json::to_string(&n)?;
-
-        q.bind(1, id.as_str())?;
-        q.bind(2, ctime.as_str())?;
+        let data = serde_json::to_string(&n.data)?;
+        q.bind(1, n.uuid.as_str())?;
+        q.bind(2, n.ctime.to_rfc3339().as_str())?;
         q.bind(3, data.as_str())?;
         while let sqlite::State::Row = q.next()? { };
     }
