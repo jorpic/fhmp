@@ -17,7 +17,6 @@ pub fn init_db(db_path: &str) -> Result<sqlite::Connection> {
     Ok(db)
 }
 
-
 #[derive(Serialize)]
 pub struct DbNote {
     pub uuid: Uuid,
@@ -30,13 +29,14 @@ pub fn insert_notes(
     db: &sqlite::Connection,
     notes: &[DbNote]
 ) -> Result<()> {
-    let mut q = db.prepare("insert into notes values (?, ?, ?)")?;
+    let mut q = db.prepare("insert into notes values (?, ?, ?, ?)")?;
     for n in notes.iter() {
         q.reset()?;
         let data = serde_json::to_string(&n.data)?;
         q.bind(1, n.uuid.to_string().as_str())?;
         q.bind(2, n.ctime.to_rfc3339().as_str())?;
-        q.bind(3, data.as_str())?;
+        q.bind(3, n.tags.as_str())?;
+        q.bind(4, data.as_str())?;
         while let sqlite::State::Row = q.next()? { };
     }
     Ok(())
