@@ -1,6 +1,6 @@
 use anyhow::Result;
-use chrono::{DateTime, Local};
-use serde::Serialize;
+use chrono::{DateTime, Utc};
+use serde::{Serialize, Deserialize};
 use serde_json::Value;
 use uuid::Uuid;
 
@@ -17,13 +17,24 @@ pub fn init_db(db_path: &str) -> Result<sqlite::Connection> {
     Ok(db)
 }
 
+#[derive(Serialize, Deserialize)]
+#[serde(rename_all = "camelCase")]
+pub enum NoteData {
+    Text(String),
+    Card(Vec<String>)
+}
+
 #[derive(Serialize)]
 pub struct DbNote {
     pub uuid: Uuid,
-    pub ctime: DateTime<Local>,
+    // We store ctime as a RFC3339 formatted string with UTC timezone
+    // in the hope that it will be easier to compare them and extract
+    // parts of them.
+    pub ctime: DateTime<Utc>,
     pub tags: String,
-    pub data: Value,
+    pub data: NoteData,
 }
+
 
 pub fn insert_notes(
     db: &sqlite::Connection,

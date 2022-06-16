@@ -1,13 +1,13 @@
 use std::io;
 
 use anyhow::{anyhow, Context, Result};
-use chrono::{DateTime, Local};
+use chrono::{DateTime, Local, Utc};
 use serde::Deserialize;
 use serde_json::json;
 use uuid::Uuid;
 
 use crate::config::read_config;
-use crate::db::{init_db, insert_notes, DbNote};
+use crate::db::{init_db, insert_notes, DbNote, NoteData};
 
 #[derive(Deserialize)]
 struct InputNote {
@@ -24,7 +24,7 @@ pub fn cmd_add() -> Result<()> {
         .context("Opening database file")?;
     let notes = read_notes(io::stdin())
         .context("Reading notes from stdin")?;
-    let notes = check_notes(&notes)
+    let notes = transform_notes(&notes)
         .context("Invalid note format")?;
     insert_notes(&db, &notes)
 }
@@ -44,33 +44,34 @@ fn read_notes<T: io::Read>(r: T) -> Result<Vec<InputNote>> {
     }
 }
 
-fn check_notes(notes: &[InputNote]) -> Result<Vec<DbNote>>
+fn transform_notes(notes: &[InputNote]) -> Result<Vec<DbNote>>
 {
     let mut res = Vec::new();
     let mut err = Vec::new();
 
     for n in notes.iter() {
-        let mut data = serde_json::Map::new();
-
-        if n.card == None && n.text == None {
-            err.push("required fields `card` or `text` are not found");
-        } else if n.card != None && n.text != None {
+        if n.card != None && n.text != None {
             err.push("both `card` and `text` are present");
         } else {
-            if let Some(card) = &n.card {
-                data.insert("card".to_string(), json!(card));
+            let data = if let Some(card) = &n.card {
+                Some(NoteData::Card(card.clone()))
             } else if let Some(text) = &n.text {
-                data.insert("text".to_string(), json!(text));
-            }
+                Some(NoteData::Text(text.clone()))
+            } else {
+                err.push("`card` or `text` are not found");
+                None
+            };
 
-            res.push(
-                DbNote {
-                    uuid: Uuid::new_v4(),
-                    tags: n.tags.clone(), // FIXME: normalize tags somehow?
-                    ctime: n.ctime.unwrap_or_else(Local::now),
-                    data: json!(data),
-                }
-            )
+            if let Some(data) = data {
+                res.push(
+                    DbNote {
+                        uuid: Uuid::new_v4(),
+                        tags: n.tags.clone(), // FIXME: normalize tags somehow?
+                        ctime: n.ctime.unwrap_or_else(Local::now).with_timezone(&Utc),
+                        data
+                    }
+                )
+            }
         }
     }
 
