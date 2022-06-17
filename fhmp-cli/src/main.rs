@@ -16,6 +16,12 @@ fn help() -> Result<()> {
 }
 
 fn main() -> Result<()> {
+    ctrlc::set_handler(|| {
+        let term = dialoguer::console::Term::stderr();
+        let _res = term.show_cursor();
+        std::process::exit(0);
+    })?;
+
     let args: Vec<String> = env::args().collect();
     match args.as_slice() {
         [_, cmd, more_args @ ..] => match &cmd[..] {
