@@ -52,3 +52,32 @@ pub fn insert_notes(
     }
     Ok(())
 }
+
+pub fn select_notes_for_review(
+    db: &sqlite::Connection
+) -> Result<Vec<DbNote>> {
+    let mut q = db.prepare(
+        "select
+            uuid, ctime, tags, data
+            from notes
+            order by random()
+            limit 10"
+    )?;
+
+    let mut res = Vec::new();
+    while let sqlite::State::Row = q.next()? {
+        res.push(DbNote {
+            uuid:
+                Uuid::parse_str(q.read::<String>(0)?.as_str())?,
+            ctime:
+                DateTime::parse_from_rfc3339(q.read::<String>(1)?.as_str())?
+                    .with_timezone(&Utc),
+            tags:
+                q.read::<String>(2)?,
+            data:
+                serde_json::from_str(q.read::<String>(3)?.as_str())?,
+        });
+    };
+
+    Ok(res)
+}

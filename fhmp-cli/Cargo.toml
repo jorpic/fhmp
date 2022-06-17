@@ -5,8 +5,9 @@ edition = "2021"
 
 [dependencies]
 anyhow = {version = "1.0"}
-config = {version = "0.13", default-features = false, features = ["toml"]}
 chrono = {version = "0.4", features = ["serde"]}
+config = {version = "0.13", default-features = false, features = ["toml"]}
+dialoguer = {version = "0.10", features = ["fuzzy-select"]}
 serde = {version = "1.0", features = ["derive"]}
 serde_yaml = {version = "0.8"}
 serde_json = {version = "1.0"}
