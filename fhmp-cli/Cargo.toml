@@ -12,5 +12,7 @@ dialoguer = {version = "0.10", features = ["fuzzy-select"]}
 serde = {version = "1.0", features = ["derive"]}
 serde_yaml = {version = "0.8"}
 serde_json = {version = "1.0"}
+sha3 = {version = "0.10"}
+hex = {version = "0.4"}
 sqlite = {version = "0.26"}
 uuid = {version = "1.0", features = ["v4", "serde"]}

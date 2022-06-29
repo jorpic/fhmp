@@ -54,6 +54,7 @@ fn transform_notes(notes: &[InputNote]) -> Result<Vec<DbNote>>
             err.push("both `card` and `text` are present");
         } else {
             let data = if let Some(card) = &n.card {
+                // FIXME: check card.len() > 1
                 Some(NoteData::Card(card.clone()))
             } else if let Some(text) = &n.text {
                 Some(NoteData::Text(text.clone()))
