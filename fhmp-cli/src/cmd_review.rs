@@ -1,8 +1,8 @@
-use anyhow::{anyhow, Context, Result};
+use anyhow::{Context, Result};
 use dialoguer::{theme::ColorfulTheme, FuzzySelect};
 
 use crate::config::read_config;
-use crate::db::{init_db, select_notes_for_review, NoteData, DbNote};
+use crate::db::{init_schema, select_notes_for_review, NoteData, DbNote};
 
 pub enum ReviewResult {
     Easy, Hard, Again
@@ -58,8 +58,10 @@ fn review_note(note: &DbNote) -> Result<Option<ReviewResult>> {
 pub fn cmd_review(tags: &[String]) -> Result<()> {
     let cfg = read_config()
         .context("Reading config")?;
-    let db = init_db(&cfg.db_path)
+    let db = sqlite::open(&cfg.db_path)
         .context("Opening database file")?;
+    init_schema(&db)
+        .context("Initializing database schema")?;
 
     let notes = select_notes_for_review(&db)?;
 

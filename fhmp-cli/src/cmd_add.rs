@@ -3,11 +3,10 @@ use std::io;
 use anyhow::{anyhow, Context, Result};
 use chrono::{DateTime, Local, Utc};
 use serde::Deserialize;
-use serde_json::json;
 use uuid::Uuid;
 
 use crate::config::read_config;
-use crate::db::{init_db, insert_notes, DbNote, NoteData};
+use crate::db::{init_schema, insert_notes, DbNote, NoteData};
 
 #[derive(Deserialize)]
 struct InputNote {
@@ -20,8 +19,11 @@ struct InputNote {
 pub fn cmd_add() -> Result<()> {
     let cfg = read_config()
         .context("Reading config")?;
-    let db = init_db(&cfg.db_path)
+
+    let db = sqlite::open(&cfg.db_path)
         .context("Opening database file")?;
+    init_schema(&db)
+        .context("Initializing database schema")?;
     let notes = read_notes(io::stdin())
         .context("Reading notes from stdin")?;
     let notes = transform_notes(&notes)
