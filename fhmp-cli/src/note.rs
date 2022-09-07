@@ -22,21 +22,21 @@ pub struct DbNote {
 }
 
 impl DbNote {
-    // FIXME: When we add note to DB, self.data serialized to JSON twice:
-    // to calculate hash and to insert JSON into DB.
-    pub fn hash(&self) -> String {
-        let mut hasher = Shake128::default();
-        hasher.update(self.tags.as_bytes());
-        hasher.update(self.data_as_json().as_bytes());
-        let mut reader = hasher.finalize_xof();
-        let mut hash = [0u8; 16];
-        reader.read(&mut hash);
-        hex::encode(hash)
-    }
-
     pub fn data_as_json(&self) -> String {
         serde_json::to_string(&self.data)
             .expect("Serializing struct to JSON should always succeed.")
+    }
+
+    pub fn hash_and_json(&self) -> (String, String) {
+        let json = self.data_as_json();
+
+        let mut hasher = Shake128::default();
+        hasher.update(self.tags.as_bytes());
+        hasher.update(json.as_bytes());
+        let mut reader = hasher.finalize_xof();
+        let mut hash = [0u8; 16];
+        reader.read(&mut hash);
+        (hex::encode(hash), json)
     }
 }
 

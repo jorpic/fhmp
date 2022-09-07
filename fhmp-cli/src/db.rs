@@ -69,12 +69,13 @@ pub fn insert_notes(
           (?, ?, ?, ?, ?)
     ")?;
     for n in notes.iter() {
+        let (hash, json) = n.hash_and_json();
         q.reset()?;
-        q.bind(1, n.hash().as_str())?;
+        q.bind(1, hash.as_str())?;
         q.bind(2, n.uuid.to_string().as_str())?;
         q.bind(3, n.ctime.to_rfc3339().as_str())?;
         q.bind(4, n.tags.as_str())?;
-        q.bind(5, n.data_as_json().as_str())?;
+        q.bind(5, json.as_str())?;
         while let sqlite::State::Row = q.next()? { };
         // FIXME: handle full duplicates
         // FIXME: handle msg updates (check if this is some prev version)
