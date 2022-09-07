@@ -1,9 +1,7 @@
 use anyhow::{anyhow, Result};
 use chrono::{DateTime, Utc};
-use serde::{Serialize, Deserialize};
 use uuid::Uuid;
-
-use sha3::{Shake128, digest::{Update, ExtendableOutput, XofReader}};
+use crate::note::DbNote;
 
 pub fn init_schema(db: &sqlite::Connection) -> Result<()> {
     db.execute("
@@ -58,33 +56,8 @@ pub fn init_schema(db: &sqlite::Connection) -> Result<()> {
     ").map_err(|e| anyhow!(e))
 }
 
-#[derive(Serialize, Deserialize)]
-#[serde(rename_all = "camelCase")]
-pub enum NoteData {
-    Text(String),
-    Card(Vec<String>)
-}
-
-#[derive(Serialize)]
-pub struct DbNote {
-    pub uuid: Uuid,
-    // ctime is stored as a RFC3339 formatted string with UTC timezone
-    // in the hope that it will be easier to use and manipulate.
-    pub ctime: DateTime<Utc>,
-    pub tags: String,
-    pub data: NoteData,
-}
-
-fn shake128(tags: &str, data: &str) -> String {
-    let mut hasher = Shake128::default();
-    hasher.update(tags.as_bytes());
-    hasher.update(data.as_bytes());
-    let mut reader = hasher.finalize_xof();
-    let mut hash = [0u8; 16];
-    reader.read(&mut hash);
-    hex::encode(hash)
-}
-
+//  insert_notes must be idempotent (i.e. skip existing notes).
+//  Hence it is ok to stop on first error. User can fix it and load the same file again.
 pub fn insert_notes(
     db: &sqlite::Connection,
     notes: &[DbNote]
@@ -97,14 +70,14 @@ pub fn insert_notes(
     ")?;
     for n in notes.iter() {
         q.reset()?;
-        let data = serde_json::to_string(&n.data)?;
-        let hash = shake128(&n.tags, &data);
-        q.bind(1, hash.as_str())?;
+        q.bind(1, n.hash().as_str())?;
         q.bind(2, n.uuid.to_string().as_str())?;
         q.bind(3, n.ctime.to_rfc3339().as_str())?;
         q.bind(4, n.tags.as_str())?;
-        q.bind(5, data.as_str())?;
+        q.bind(5, n.data_as_json().as_str())?;
         while let sqlite::State::Row = q.next()? { };
+        // FIXME: handle full duplicates
+        // FIXME: handle msg updates (check if this is some prev version)
     }
     Ok(())
 }

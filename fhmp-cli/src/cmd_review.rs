@@ -2,7 +2,8 @@ use anyhow::{Context, Result};
 use dialoguer::{theme::ColorfulTheme, FuzzySelect};
 
 use crate::config::read_config;
-use crate::db::{init_schema, select_notes_for_review, NoteData, DbNote};
+use crate::note::{DbNote, NoteData};
+use crate::db::{init_schema, select_notes_for_review};
 
 pub enum ReviewResult {
     Easy, Hard, Again

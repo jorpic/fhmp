@@ -2,6 +2,7 @@ use std::env;
 use anyhow::Result;
 
 mod config;
+mod note;
 mod db;
 mod cmd_add;
 use cmd_add::cmd_add;
