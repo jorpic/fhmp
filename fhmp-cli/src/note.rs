@@ -17,7 +17,6 @@ pub struct DbNote {
     // ctime is stored as a RFC3339 formatted string with UTC timezone
     // in the hope that it will be easier to use and manipulate.
     pub ctime: DateTime<Utc>,
-    // FIXME: tags must be normalized (sorted & LF delimited)
     pub tags: String,
     pub data: NoteData,
 }
@@ -55,7 +54,12 @@ impl InputNote {
     pub fn to_db_note(&self) -> Result<DbNote, String> {
         let uuid = self.uuid.unwrap_or_else(Uuid::new_v4);
         let ctime = self.ctime.unwrap_or_else(Local::now).with_timezone(&Utc);
-        let tags = self.tags.clone(); // FIXME: sort
+        let mut tags = self.tags
+            .split(",")
+            .map(|s| s.trim().to_lowercase())
+            .collect::<Vec<_>>();
+        tags.sort();
+        let tags = tags.join("\n");
 
         if self.card != None && self.text != None {
             Err("both `card` and `text` are present".to_string())
