@@ -1,7 +1,8 @@
-use serde::{Serialize, Deserialize};
 use chrono::{DateTime, Utc, Local};
-use uuid::Uuid;
+use serde::{Serialize, Deserialize};
 use sha3::{Shake128, digest::{Update, ExtendableOutput, XofReader}};
+use thiserror::Error;
+use uuid::Uuid;
 
 
 #[derive(Serialize, Deserialize, Clone)]
@@ -50,8 +51,18 @@ pub struct InputNote {
     pub text: Option<String>
 }
 
+#[derive(Error, Debug)]
+pub enum NoteParseError {
+    #[error("no `card` or `text` keys are found")]
+    KeysNotFound,
+    #[error("both `card` and `text` keys are present")]
+    TooManyKeys,
+    #[error("`card` must have two or more elments")]
+    InvalidCard,
+}
+
 impl InputNote {
-    pub fn to_db_note(&self) -> Result<DbNote, String> {
+    pub fn to_db_note(&self) -> Result<DbNote, NoteParseError> {
         let uuid = self.uuid.unwrap_or_else(Uuid::new_v4);
         let ctime = self.ctime.unwrap_or_else(Local::now).with_timezone(&Utc);
         let mut tags = self.tags
@@ -62,23 +73,23 @@ impl InputNote {
         let tags = tags.join("\n");
 
         if self.card != None && self.text != None {
-            Err("both `card` and `text` are present".to_string())
+            Err(NoteParseError::TooManyKeys)
         } else if let Some(card) = &self.card {
-           if card.len() < 2 {
-               Err("`card` must have two or more elments".to_string())
-           } else {
-               Ok(DbNote {
-                   uuid, ctime, tags,
-                   data: NoteData::Card(card.clone())
-               })
-           }
+            if card.len() < 2 {
+                Err(NoteParseError::InvalidCard)
+            } else {
+                Ok(DbNote {
+                    uuid, ctime, tags,
+                    data: NoteData::Card(card.clone())
+                })
+            }
         } else if let Some(text) = &self.text {
             Ok(DbNote {
                 uuid, ctime, tags,
                 data: NoteData::Text(text.clone())
             })
         } else {
-            Err("`card` or `text` are not found".to_string())
+            Err(NoteParseError::KeysNotFound)
         }
     }
 }

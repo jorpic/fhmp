@@ -52,7 +52,7 @@ fn transform_notes(notes: &[InputNote]) -> Result<Vec<DbNote>>
         Ok(res)
     } else {
         let err: String = err.iter()
-            .map(|s| "- ".to_string() + s + "\n")
+            .map(|s| "- ".to_string() + &s.to_string() + "\n")
             .collect();
         Err(anyhow!(err))
     }

@@ -73,4 +73,3 @@ pub fn cmd_review(tags: &[String]) -> Result<()> {
     }
     Ok(())
 }
-
