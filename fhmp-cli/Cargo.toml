@@ -17,3 +17,6 @@ sha3 = {version = "0.10"}
 sqlite = {version = "0.26"}
 thiserror = {version = "1.0"}
 uuid = {version = "1.0", features = ["v4", "serde"]}
+
+[dev-dependencies]
+indoc = {version = "1.0"}
