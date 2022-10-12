@@ -16,7 +16,7 @@ pub fn init_schema(db: &sqlite::Connection) -> Result<()> {
             (2, 'retired'); -- was updated by a newer version or deleted
 
         -- This table holds our notes with some metadata.
-        -- Notes are read-only. Hash of tags+data is used as primary key.
+        -- Notes are read-only. Hash of tags+data is used as a primary key.
         -- When updating a note, a new version is created and the original one
         -- is marked as 'retired'.
         -- UUID is used to link versions together and track history of updates.
@@ -37,13 +37,13 @@ pub fn init_schema(db: &sqlite::Connection) -> Result<()> {
                 where status = 1;
 
         -- This table holds history of reviews.
-        -- Each row references some note and contains review outcome.
+        -- Each row references some note and contains a review outcome.
         create table if not exists review(
             id integer primary key,
             note_id text not null references notes(uuid),
             ctime text not null,
-            result text not null,  -- FIXME: dictionary
-            decision json not null -- free form details of decision
+            result text not null,  -- FIXME: dictionary of possible results?
+            decision json not null -- free form details of the decision
         );
 
         -- Queue is used to select notes that are due for review.
@@ -56,29 +56,49 @@ pub fn init_schema(db: &sqlite::Connection) -> Result<()> {
     ").map_err(|e| anyhow!(e))
 }
 
+struct InsertNoteQuery<'l> {
+    stm: sqlite::Statement<'l>
+}
+
+impl<'l> InsertNoteQuery<'l> {
+    fn init(db: &'l sqlite::Connection) -> Result<Self> {
+        Ok(Self {
+            stm: db.prepare("
+                insert into notes
+                  (hash, uuid, ctime, tags, data)
+                values
+                  (?, ?, ?, ?, ?)
+                on conflict (hash) do nothing
+            ")?
+        })
+    }
+
+    fn exec(&mut self, n: &DbNote) -> Result<()> {
+        self.stm.reset()?;
+        let (hash, json) = n.hash_and_json();
+        self.stm.bind(1, hash.as_str())?;
+        self.stm.bind(2, n.uuid.to_string().as_str())?;
+        self.stm.bind(3, n.ctime.to_rfc3339().as_str())?;
+        self.stm.bind(4, n.tags.as_str())?;
+        self.stm.bind(5, json.as_str())?;
+        while let sqlite::State::Row = self.stm.next()? { }
+        Ok(())
+    }
+}
+
 //  insert_notes must be idempotent (i.e. skip existing notes).
-//  Hence it is ok to stop on first error. User can fix it and load the same file again.
+//  Hence when loading notes from file it is ok to stop on the first error.
+//  User can fix the error and try to load the updated file again.
 pub fn insert_notes(
     db: &sqlite::Connection,
     notes: &[DbNote]
 ) -> Result<()> {
-    let mut q = db.prepare("
-        insert into notes
-          (hash, uuid, ctime, tags, data)
-        values
-          (?, ?, ?, ?, ?)
-    ")?;
+    let mut insert_note = InsertNoteQuery::init(db)?;
+
     for n in notes.iter() {
-        let (hash, json) = n.hash_and_json();
-        q.reset()?;
-        q.bind(1, hash.as_str())?;
-        q.bind(2, n.uuid.to_string().as_str())?;
-        q.bind(3, n.ctime.to_rfc3339().as_str())?;
-        q.bind(4, n.tags.as_str())?;
-        q.bind(5, json.as_str())?;
-        while let sqlite::State::Row = q.next()? { };
-        // FIXME: handle full duplicates
-        // FIXME: handle msg updates (check if this is some prev version)
+        // FIXME: begin transaction
+        insert_note.exec(&n)?;
+        // FIXME: commit transaction
     }
     Ok(())
 }
@@ -110,4 +130,34 @@ pub fn select_notes_for_review(
     };
 
     Ok(res)
+}
+
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use crate::note::*;
+    use chrono::{Local, Utc};
+    use uuid::Uuid;
+
+    #[test]
+    fn can_init_schema() -> Result<()> {
+        let db = sqlite::open(":memory:")?;
+        init_schema(&db)
+    }
+
+    #[test]
+    fn can_add_note() -> Result<()> {
+        let db = sqlite::open(":memory:")?;
+        init_schema(&db)?;
+        let note = DbNote {
+            uuid: Uuid::new_v4(),
+            ctime: Local::now().with_timezone(&Utc),
+            tags: "hello\nworld".to_string(),
+            data: NoteData::Text("hello!".to_string())
+        };
+        let notes = vec![note.clone(), note];
+        insert_notes(&db, &notes)
+        // FIXME: check note exists
+    }
 }
