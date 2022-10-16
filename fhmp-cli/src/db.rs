@@ -156,11 +156,12 @@ pub fn select_notes_for_review(
 }
 
 #[cfg(test)]
+// Returns active notes
 fn dump_notes(
     db: &sqlite::Connection
 ) -> Result<DbNotes> {
     let q = db.prepare(
-        "select uuid, ctime, tags, data from notes"
+        "select uuid, ctime, tags, data from notes where status = 1"
     )?;
     Ok(DbNotes(q))
 }
@@ -192,8 +193,6 @@ fn db_note_from_row(q: &sqlite::Statement) -> Result<DbNote> {
     })
 }
 
-
-
 #[cfg(test)]
 mod tests {
     use super::*;
@@ -211,18 +210,41 @@ mod tests {
     fn can_add_note() -> Result<()> {
         let db = sqlite::open(":memory:")?;
         init_schema(&db)?;
-        let note = DbNote {
-            uuid: Uuid::new_v4(),
-            ctime: Local::now().with_timezone(&Utc),
-            tags: "hello\nworld".to_string(),
-            data: NoteData::Text("hello!".to_string())
-        };
+        let note = text_note("hello\nworld", "hello!");
         let notes = vec![note.clone(), note.clone()];
-        insert_notes(&db, &notes)?;
+        insert_notes(&db, &notes)?; // skips duplicates
 
         let mut iter = dump_notes(&db)?;
         assert_eq!(Some(note), iter.next());
         assert_eq!(None, iter.next());
         Ok(())
+    }
+
+    #[test]
+    fn can_update_note() -> Result<()> {
+        let db = sqlite::open(":memory:")?;
+        init_schema(&db)?;
+        let note1 = text_note("hello\nworld", "hello!");
+        let note2 = DbNote {
+            uuid: note1.uuid,
+            ..text_note("hello\nworld", "bye!")
+        };
+        let notes = vec![note1, note2.clone()];
+        insert_notes(&db, &notes)?;
+
+        let mut iter = dump_notes(&db)?;
+        assert_eq!(Some(note2), iter.next());
+        assert_eq!(None, iter.next());
+        Ok(())
+    }
+
+    // helper function for tests
+    fn text_note(tags: &str, text: &str) -> DbNote {
+        DbNote {
+            uuid: Uuid::new_v4(),
+            ctime: Local::now().with_timezone(&Utc),
+            tags: tags.to_string(),
+            data: NoteData::Text(text.to_string())
+        }
     }
 }
