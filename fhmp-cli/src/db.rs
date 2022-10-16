@@ -56,50 +56,83 @@ pub fn init_schema(db: &sqlite::Connection) -> Result<()> {
     ").map_err(|e| anyhow!(e))
 }
 
-struct InsertNoteQuery<'l> {
-    stm: sqlite::Statement<'l>
-}
+struct RetireNoteQuery<'l>(sqlite::Statement<'l>);
 
-impl<'l> InsertNoteQuery<'l> {
+impl<'l> RetireNoteQuery<'l> {
     fn init(db: &'l sqlite::Connection) -> Result<Self> {
-        Ok(Self {
-            stm: db.prepare("
-                insert into notes
-                  (hash, uuid, ctime, tags, data)
-                values
-                  (?, ?, ?, ?, ?)
-                on conflict (hash) do nothing
-            ")?
-        })
+        db.prepare("
+            update notes
+              set
+                status = 2,
+                mtime = strftime('%Y-%m-%dT%H:%M:%SZ', 'now')
+              where uuid = ?
+        ").map_err(|e| anyhow!(e)).map(Self)
     }
 
-    fn exec(&mut self, n: &DbNote) -> Result<()> {
-        self.stm.reset()?;
-        let (hash, json) = n.hash_and_json();
-        self.stm.bind(1, hash.as_str())?;
-        self.stm.bind(2, n.uuid.to_string().as_str())?;
-        self.stm.bind(3, n.ctime.to_rfc3339().as_str())?;
-        self.stm.bind(4, n.tags.as_str())?;
-        self.stm.bind(5, json.as_str())?;
-        while let sqlite::State::Row = self.stm.next()? { }
+    fn exec(&mut self, uuid: &str) -> Result<()> {
+        self.0.reset()?;
+        self.0.bind(1, uuid)?;
+        while let sqlite::State::Row = self.0.next()? { }
         Ok(())
     }
 }
 
-//  insert_notes must be idempotent (i.e. skip existing notes).
-//  Hence when loading notes from file it is ok to stop on the first error.
-//  User can fix the error and try to load the updated file again.
+struct InsertNoteQuery<'l>(sqlite::Statement<'l>);
+
+impl<'l> InsertNoteQuery<'l> {
+    fn init(db: &'l sqlite::Connection) -> Result<Self> {
+        db.prepare("
+            insert into notes
+              (hash, uuid, ctime, tags, data)
+            values
+              (?, ?, ?, ?, ?)
+            on conflict (hash) do nothing
+        ").map_err(|e| anyhow!(e)).map(Self)
+    }
+
+    fn exec(
+        &mut self,
+        hash: &str,
+        uuid: &str,
+        ctime: &DateTime<Utc>,
+        tags: &str,
+        json: &str
+    ) -> Result<()> {
+        self.0.reset()?;
+        self.0.bind(1, hash)?;
+        self.0.bind(2, uuid)?;
+        self.0.bind(3, ctime.to_rfc3339().as_str())?;
+        self.0.bind(4, tags)?;
+        self.0.bind(5, json)?;
+        while let sqlite::State::Row = self.0.next()? { }
+        Ok(())
+    }
+}
+
+// insert_notes must be idempotent (loading the same file again changes nothing).
+// So when loading notes from a file it is ok to stop on the first error,
+// fix that error and try to load the updated file again.
+// We use hash(tags, note_data) to accomplish this.
 pub fn insert_notes(
     db: &sqlite::Connection,
     notes: &[DbNote]
 ) -> Result<()> {
+    let mut retire_note = RetireNoteQuery::init(db)?;
     let mut insert_note = InsertNoteQuery::init(db)?;
 
     for n in notes.iter() {
-        // FIXME: begin transaction
-        insert_note.exec(&n)?;
-        // FIXME: commit transaction
+        db.execute("begin transaction")?;
+        let uuid = n.uuid.to_string();
+        retire_note.exec(&uuid)?;
+        let (hash, json) = n.hash_and_json();
+        insert_note.exec(&hash, &uuid, &n.ctime, &n.tags, &json)?;
+        db.execute("commit transaction")?; // FIXME: try scopeguard
     }
+    // FIXME: insert new notes into queue
+    // FIXME: update references in the queue
+    // update queue q
+    //  set hash = (select hash from notes where uuid = q.uuid and status = 'active')
+    // select from notes where status = 'retired'
     Ok(())
 }
 
