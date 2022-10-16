@@ -32,6 +32,18 @@ pub fn init_schema(db: &sqlite::Connection) -> Result<()> {
         create index if not exists notes_uuid_ix
             on notes(uuid);
 
+        create trigger if not exists retire_updated_notes
+            before insert on notes
+            begin
+                update notes
+                    set status = 2,
+                        mtime = strftime('%Y-%m-%dT%H:%M:%SZ', 'now')
+                    where true
+                      and hash <> new.hash
+                      and uuid = new.uuid
+                      and status = 1;
+            end;
+
         create view if not exists current_notes as
             select * from notes
                 where status = 1;
@@ -56,27 +68,6 @@ pub fn init_schema(db: &sqlite::Connection) -> Result<()> {
     ").map_err(|e| anyhow!(e))
 }
 
-struct RetireNoteQuery<'l>(sqlite::Statement<'l>);
-
-impl<'l> RetireNoteQuery<'l> {
-    fn init(db: &'l sqlite::Connection) -> Result<Self> {
-        db.prepare("
-            update notes
-              set
-                status = 2,
-                mtime = strftime('%Y-%m-%dT%H:%M:%SZ', 'now')
-              where uuid = ?
-        ").map_err(|e| anyhow!(e)).map(Self)
-    }
-
-    fn exec(&mut self, uuid: &str) -> Result<()> {
-        self.0.reset()?;
-        self.0.bind(1, uuid)?;
-        while let sqlite::State::Row = self.0.next()? { }
-        Ok(())
-    }
-}
-
 struct InsertNoteQuery<'l>(sqlite::Statement<'l>);
 
 impl<'l> InsertNoteQuery<'l> {
@@ -90,20 +81,14 @@ impl<'l> InsertNoteQuery<'l> {
         ").map_err(|e| anyhow!(e)).map(Self)
     }
 
-    fn exec(
-        &mut self,
-        hash: &str,
-        uuid: &str,
-        ctime: &DateTime<Utc>,
-        tags: &str,
-        json: &str
-    ) -> Result<()> {
+    fn exec(&mut self, n: &DbNote) -> Result<()> {
         self.0.reset()?;
-        self.0.bind(1, hash)?;
-        self.0.bind(2, uuid)?;
-        self.0.bind(3, ctime.to_rfc3339().as_str())?;
-        self.0.bind(4, tags)?;
-        self.0.bind(5, json)?;
+        let (hash, json) = n.hash_and_json();
+        self.0.bind(1, hash.as_str())?;
+        self.0.bind(2, n.uuid.to_string().as_str())?;
+        self.0.bind(3, n.ctime.to_rfc3339().as_str())?;
+        self.0.bind(4, n.tags.as_str())?;
+        self.0.bind(5, json.as_str())?;
         while let sqlite::State::Row = self.0.next()? { }
         Ok(())
     }
@@ -117,16 +102,10 @@ pub fn insert_notes(
     db: &sqlite::Connection,
     notes: &[DbNote]
 ) -> Result<()> {
-    let mut retire_note = RetireNoteQuery::init(db)?;
     let mut insert_note = InsertNoteQuery::init(db)?;
 
     for n in notes.iter() {
-        db.execute("begin transaction")?;
-        let uuid = n.uuid.to_string();
-        retire_note.exec(&uuid)?;
-        let (hash, json) = n.hash_and_json();
-        insert_note.exec(&hash, &uuid, &n.ctime, &n.tags, &json)?;
-        db.execute("commit transaction")?; // FIXME: try scopeguard
+        insert_note.exec(&n)?;
     }
     // FIXME: insert new notes into queue
     // FIXME: update references in the queue
@@ -207,16 +186,37 @@ mod tests {
     }
 
     #[test]
-    fn can_add_note() -> Result<()> {
+    fn can_add_single_note() -> Result<()> {
         let db = sqlite::open(":memory:")?;
         init_schema(&db)?;
         let note = text_note("hello\nworld", "hello!");
-        let notes = vec![note.clone(), note.clone()];
-        insert_notes(&db, &notes)?; // skips duplicates
+        insert_notes(&db, &vec![note.clone()])?;
 
         let mut iter = dump_notes(&db)?;
         assert_eq!(Some(note), iter.next());
         assert_eq!(None, iter.next());
+        Ok(())
+    }
+
+    #[test]
+    fn insert_skips_duplicates() -> Result<()> {
+        let db = sqlite::open(":memory:")?;
+        init_schema(&db)?;
+        let note1 = text_note("hello\nworld", "hello!");
+        let note2 = text_note("bye\nworld", "bye!");
+        let notes = vec![note1.clone(), note2.clone(), note1.clone()];
+        insert_notes(&db, &notes)?;
+        let notes = vec![note2.clone(), note2.clone()];
+        insert_notes(&db, &notes)?;
+
+        let mut n1 = 0;
+        let mut n2 = 0;
+        for n in dump_notes(&db)? {
+            if n == note1 { n1 += 1 }
+            else if n == note2 { n2 += 1 }
+        }
+        assert_eq!(1, n1);
+        assert_eq!(1, n2);
         Ok(())
     }
 
