@@ -149,21 +149,49 @@ pub fn select_notes_for_review(
 
     let mut res = Vec::new();
     while let sqlite::State::Row = q.next()? {
-        res.push(DbNote {
-            uuid:
-                Uuid::parse_str(q.read::<String>(0)?.as_str())?,
-            ctime:
-                DateTime::parse_from_rfc3339(q.read::<String>(1)?.as_str())?
-                    .with_timezone(&Utc),
-            tags:
-                q.read::<String>(2)?,
-            data:
-                serde_json::from_str(q.read::<String>(3)?.as_str())?,
-        });
-    };
+        res.push(db_note_from_row(&q)?);
+    }
 
     Ok(res)
 }
+
+#[cfg(test)]
+fn dump_notes(
+    db: &sqlite::Connection
+) -> Result<DbNotes> {
+    let q = db.prepare(
+        "select uuid, ctime, tags, data from notes"
+    )?;
+    Ok(DbNotes(q))
+}
+
+pub struct DbNotes<'a>(sqlite::Statement<'a>);
+
+impl<'a> Iterator for DbNotes<'a> {
+    type Item = DbNote;
+    fn next(&mut self) -> Option<DbNote> {
+        match self.0.next() {
+            Ok(sqlite::State::Row) => db_note_from_row(&self.0).ok(),
+            _ => None
+        }
+    }
+}
+
+// Assumes that q starts like "select uuid, ctime, tags, data ..".
+fn db_note_from_row(q: &sqlite::Statement) -> Result<DbNote> {
+    Ok(DbNote {
+        uuid:
+            Uuid::parse_str(q.read::<String>(0)?.as_str())?,
+        ctime:
+            DateTime::parse_from_rfc3339(q.read::<String>(1)?.as_str())?
+                .with_timezone(&Utc),
+        tags:
+            q.read::<String>(2)?,
+        data:
+            serde_json::from_str(q.read::<String>(3)?.as_str())?,
+    })
+}
+
 
 
 #[cfg(test)]
@@ -189,8 +217,12 @@ mod tests {
             tags: "hello\nworld".to_string(),
             data: NoteData::Text("hello!".to_string())
         };
-        let notes = vec![note.clone(), note];
-        insert_notes(&db, &notes)
-        // FIXME: check note exists
+        let notes = vec![note.clone(), note.clone()];
+        insert_notes(&db, &notes)?;
+
+        let mut iter = dump_notes(&db)?;
+        assert_eq!(Some(note), iter.next());
+        assert_eq!(None, iter.next());
+        Ok(())
     }
 }
