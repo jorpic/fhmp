@@ -44,6 +44,16 @@ pub fn init_schema(db: &sqlite::Connection) -> Result<()> {
                       and status = 1;
             end;
 
+        create trigger if not exists add_fresh_notes_to_queue
+            after insert on notes
+            begin
+                insert into queue
+                    (note_id, next_review)
+                    values
+                    (new.uuid, strftime('%Y-%m-%dT%H:%M:%SZ', 'now'))
+                on conflict (note_id) do nothing;
+            end;
+
         create view if not exists current_notes as
             select * from notes
                 where status = 1;
@@ -107,23 +117,22 @@ pub fn insert_notes(
     for n in notes.iter() {
         insert_note.exec(&n)?;
     }
-    // FIXME: insert new notes into queue
-    // FIXME: update references in the queue
-    // update queue q
-    //  set hash = (select hash from notes where uuid = q.uuid and status = 'active')
-    // select from notes where status = 'retired'
     Ok(())
 }
 
 pub fn select_notes_for_review(
     db: &sqlite::Connection
 ) -> Result<Vec<DbNote>> {
-    let mut q = db.prepare(
-        "select
-            uuid, ctime, tags, data
-            from notes
-            order by random()
-            limit 10"
+    let mut q = db.prepare("
+        select
+            n.uuid, n.ctime, n.tags, n.data
+        from queue q, notes n
+        where true
+          and q.next_review <= strftime('%Y-%m-%dT%H:%M:%SZ', 'now')
+          and q.note_id = n.uuid
+          and n.status = 1
+        order by random()
+        limit 10"
     )?;
 
     let mut res = Vec::new();
@@ -235,6 +244,26 @@ mod tests {
         let mut iter = dump_notes(&db)?;
         assert_eq!(Some(note2), iter.next());
         assert_eq!(None, iter.next());
+        Ok(())
+    }
+
+    #[test]
+    fn insert_adds_to_queue() -> Result<()> {
+        let db = sqlite::open(":memory:")?;
+        init_schema(&db)?;
+        let note1 = text_note("hello\nworld", "hello!");
+        let note2 = text_note("bye\nworld", "bye!");
+        let notes = vec![note1.clone(), note2.clone()];
+        insert_notes(&db, &notes)?;
+
+        let mut n1 = 0;
+        let mut n2 = 0;
+        for n in select_notes_for_review(&db)?.iter() {
+            if *n == note1 { n1 += 1 }
+            else if *n == note2 { n2 += 1 }
+        }
+        assert_eq!(1, n1);
+        assert_eq!(1, n2);
         Ok(())
     }
 
