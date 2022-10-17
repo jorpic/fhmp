@@ -58,16 +58,11 @@ pub struct InputNote {
     pub uuid: Option<Uuid>,
     pub ctime: Option<DateTime<Local>>,
     pub tags: String,
-    pub card: Option<Vec<String>>,
-    pub text: Option<String>
+    pub data: NoteData
 }
 
 #[derive(Error, PartialEq, Debug)]
 pub enum NoteParseError {
-    #[error("no `card` or `text` keys are found")]
-    KeysNotFound,
-    #[error("both `card` and `text` keys are present")]
-    TooManyKeys,
     #[error("`card` must have two or more elments")]
     InvalidCard,
 }
@@ -86,24 +81,11 @@ impl InputNote {
         tags.sort();
         let tags = tags.join("\n"); // list of tags is \n delimited
 
-        if self.card != None && self.text != None {
-            Err(NoteParseError::TooManyKeys)
-        } else if let Some(card) = &self.card {
-            if card.len() < 2 {
-                Err(NoteParseError::InvalidCard)
-            } else {
-                Ok(DbNote {
-                    uuid, ctime, tags,
-                    data: NoteData::Card(card.clone())
-                })
-            }
-        } else if let Some(text) = &self.text {
-            Ok(DbNote {
-                uuid, ctime, tags,
-                data: NoteData::Text(text.clone())
-            })
-        } else {
-            Err(NoteParseError::KeysNotFound)
+        match &self.data {
+            NoteData::Card(items) if items.len() < 2 =>
+                Err(NoteParseError::InvalidCard),
+            _ =>
+                Ok(DbNote { uuid, ctime, tags, data: self.data.clone() })
         }
     }
 }
@@ -151,7 +133,7 @@ mod tests {
     fn input_note_to_db_note_ok() -> Result<()> {
         let input_note: InputNote = serde_yaml::from_str(indoc!("
             tags: hello, world
-            text: |
+            data: !text |
               hello, world!
         "))?;
         let db_note = input_note.to_db_note()?;
@@ -160,7 +142,7 @@ mod tests {
 
         let input_note: InputNote = serde_yaml::from_str(indoc!("
             tags: hello, world
-            card:
+            data: !card
               - hello
               - world
         "))?;
@@ -175,34 +157,13 @@ mod tests {
     fn input_note_to_db_note_errs() -> Result<()> {
         let input_note: InputNote = serde_yaml::from_str(indoc!("
             tags: hello, world
-        "))?;
-        assert_eq!(
-            input_note.to_db_note(),
-            Err(NoteParseError::KeysNotFound)
-        );
-
-        let input_note: InputNote = serde_yaml::from_str(indoc!("
-            tags: hello, world
-            card:
+            data: !card
               - hello
         "))?;
         assert_eq!(
             input_note.to_db_note(),
             Err(NoteParseError::InvalidCard)
         );
-
-        let input_note: InputNote = serde_yaml::from_str(indoc!("
-            tags: hello, world
-            text: hello
-            card:
-              - hello
-              - world
-        "))?;
-        assert_eq!(
-            input_note.to_db_note(),
-            Err(NoteParseError::TooManyKeys)
-        );
-
         Ok(())
     }
 
