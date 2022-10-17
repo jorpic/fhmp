@@ -143,27 +143,17 @@ pub fn select_notes_for_review(
     Ok(res)
 }
 
-#[cfg(test)]
-// Returns active notes
-fn dump_notes(
+pub fn active_notes(
     db: &sqlite::Connection
 ) -> Result<DbNotes> {
-    let q = db.prepare(
-        "select uuid, ctime, tags, data from notes where status = 1"
-    )?;
+    let q = db.prepare("
+        select
+            uuid, ctime, tags, data
+        from notes
+        where status = 1
+        order by ctime asc
+    ")?;
     Ok(DbNotes(q))
-}
-
-pub struct DbNotes<'a>(sqlite::Statement<'a>);
-
-impl<'a> Iterator for DbNotes<'a> {
-    type Item = DbNote;
-    fn next(&mut self) -> Option<DbNote> {
-        match self.0.next() {
-            Ok(sqlite::State::Row) => db_note_from_row(&self.0).ok(),
-            _ => None
-        }
-    }
 }
 
 // Assumes that q starts like "select uuid, ctime, tags, data ..".
@@ -179,6 +169,18 @@ fn db_note_from_row(q: &sqlite::Statement) -> Result<DbNote> {
         data:
             serde_json::from_str(q.read::<String>(3)?.as_str())?,
     })
+}
+
+pub struct DbNotes<'a>(sqlite::Statement<'a>);
+
+impl<'a> Iterator for DbNotes<'a> {
+    type Item = DbNote;
+    fn next(&mut self) -> Option<DbNote> {
+        match self.0.next() {
+            Ok(sqlite::State::Row) => db_note_from_row(&self.0).ok(),
+            _ => None
+        }
+    }
 }
 
 #[cfg(test)]
@@ -201,7 +203,7 @@ mod tests {
         let note = text_note("hello\nworld", "hello!");
         insert_notes(&db, &vec![note.clone()])?;
 
-        let mut iter = dump_notes(&db)?;
+        let mut iter = active_notes(&db)?;
         assert_eq!(Some(note), iter.next());
         assert_eq!(None, iter.next());
         Ok(())
@@ -220,7 +222,7 @@ mod tests {
 
         let mut n1 = 0;
         let mut n2 = 0;
-        for n in dump_notes(&db)? {
+        for n in active_notes(&db)? {
             if n == note1 { n1 += 1 }
             else if n == note2 { n2 += 1 }
         }
@@ -241,7 +243,7 @@ mod tests {
         let notes = vec![note1, note2.clone()];
         insert_notes(&db, &notes)?;
 
-        let mut iter = dump_notes(&db)?;
+        let mut iter = active_notes(&db)?;
         assert_eq!(Some(note2), iter.next());
         assert_eq!(None, iter.next());
         Ok(())

@@ -6,7 +6,7 @@ use crate::config::read_config;
 use crate::note::{InputNote, DbNote};
 use crate::db::{init_schema, insert_notes};
 
-pub fn cmd_add() -> Result<()> {
+pub fn exec() -> Result<()> {
     let cfg = read_config()
         .context("Reading config")?;
 

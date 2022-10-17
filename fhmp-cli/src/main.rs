@@ -5,9 +5,8 @@ mod config;
 mod note;
 mod db;
 mod cmd_add;
-use cmd_add::cmd_add;
+mod cmd_dump;
 mod cmd_review;
-use cmd_review::cmd_review;
 
 fn help() -> Result<()> {
     println!("Usage:");
@@ -26,8 +25,9 @@ fn main() -> Result<()> {
     let args: Vec<String> = env::args().collect();
     match args.as_slice() {
         [_, cmd, more_args @ ..] => match &cmd[..] {
-            "add" if more_args.is_empty() => cmd_add(),
-            "review" => cmd_review(more_args),
+            "add" if more_args.is_empty() => cmd_add::exec(),
+            "dump" if more_args.is_empty() => cmd_dump::exec(),
+            "review" => cmd_review::exec(more_args),
             _     => help(),
         }
         _ => help()

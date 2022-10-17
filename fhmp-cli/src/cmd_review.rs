@@ -56,7 +56,7 @@ fn review_note(note: &DbNote) -> Result<Option<ReviewResult>> {
     }
 }
 
-pub fn cmd_review(tags: &[String]) -> Result<()> {
+pub fn exec(tags: &[String]) -> Result<()> {
     let cfg = read_config()
         .context("Reading config")?;
     let db = sqlite::open(&cfg.db_path)
