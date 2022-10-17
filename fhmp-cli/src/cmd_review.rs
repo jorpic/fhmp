@@ -33,7 +33,7 @@ fn review_note(note: &DbNote) -> Result<Option<ReviewResult>> {
     match &note.data {
         NoteData::Text(txt) => {
             println!("{}", txt);
-            return get_review_result();
+            get_review_result()
         },
         NoteData::Card(card) => {
             println!("{}", card[0]);
@@ -45,12 +45,12 @@ fn review_note(note: &DbNote) -> Result<Option<ReviewResult>> {
                 .interact()?;
 
             if res == 1 {
-                return Ok(Some(ReviewResult::Easy))
+                Ok(Some(ReviewResult::Easy))
             } else {
                 for txt in &card[1..] {
                     println!("{}", txt);
                 }
-                return get_review_result();
+                get_review_result()
             }
         }
     }
@@ -67,7 +67,7 @@ pub fn exec(tags: &[String]) -> Result<()> {
     let notes = select_notes_for_review(&db)?;
 
     for note in notes.iter() {
-        if let Some(res) = review_note(&note)? {
+        if let Some(res) = review_note(note)? {
             // FIXME: save result and schedule next review
         }
     }

@@ -115,7 +115,7 @@ pub fn insert_notes(
     let mut insert_note = InsertNoteQuery::init(db)?;
 
     for n in notes.iter() {
-        insert_note.exec(&n)?;
+        insert_note.exec(n)?;
     }
     Ok(())
 }

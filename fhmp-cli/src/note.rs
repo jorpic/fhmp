@@ -75,7 +75,7 @@ impl InputNote {
         let uuid = self.uuid.unwrap_or_else(Uuid::new_v4);
         let ctime = self.ctime.unwrap_or_else(Local::now).with_timezone(&Utc);
         let mut tags = self.tags
-            .split(",")
+            .split(',')
             .map(|s| s.trim().to_lowercase())
             .collect::<Vec<_>>();
         tags.sort();
