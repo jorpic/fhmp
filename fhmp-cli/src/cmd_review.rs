@@ -64,7 +64,7 @@ pub fn exec(tags: &[String]) -> Result<()> {
     init_schema(&db)
         .context("Initializing database schema")?;
 
-    let notes = select_notes_for_review(&db)?;
+    let notes = select_notes_for_review(&db, tags)?;
 
     for note in notes.iter() {
         if let Some(res) = review_note(note)? {

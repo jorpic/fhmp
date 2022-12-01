@@ -121,19 +121,30 @@ pub fn insert_notes(
 }
 
 pub fn select_notes_for_review(
-    db: &sqlite::Connection
+    db: &sqlite::Connection,
+    tags: &[String]
 ) -> Result<Vec<DbNote>> {
-    let mut q = db.prepare("
-        select
-            n.uuid, n.ctime, n.tags, n.data
-        from queue q, notes n
-        where true
-          and q.next_review <= strftime('%Y-%m-%dT%H:%M:%SZ', 'now')
-          and q.note_id = n.uuid
-          and n.status = 1
-        order by random()
-        limit 10"
+    // FIXME: switch to rusqlite library and use regexp here
+    //     " and tags regexp ('\\b' || ? || '\\b')"
+    // see example at https://docs.rs/rusqlite/latest/rusqlite/functions/
+    let tag_filter = vec![" and tags like ('%' || ? || '%')"; tags.len()].join("");
+    let mut q = db.prepare(
+        format!("
+            select
+                n.uuid, n.ctime, n.tags, n.data
+            from queue q, notes n
+            where true
+              and q.next_review <= strftime('%Y-%m-%dT%H:%M:%SZ', 'now')
+              and q.note_id = n.uuid
+              and n.status = 1
+              {tag_filter}
+            order by random()
+            limit 10")
     )?;
+
+    for (i, tag) in tags.iter().enumerate() {
+        q.bind(i+1, tag.as_str())?;
+    }
 
     let mut res = Vec::new();
     while let sqlite::State::Row = q.next()? {
