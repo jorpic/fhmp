@@ -6,6 +6,7 @@ use serde::Deserialize;
 #[derive(Deserialize)]
 pub struct CliConfig {
     pub db_path: String,
+    pub data_path: PathBuf,
 }
 
 pub fn read_config() -> Result<CliConfig> {
