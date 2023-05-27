@@ -10,6 +10,7 @@ config = {version = "0.13", default-features = false, features = ["toml"]}
 ctrlc  = "3.2"
 dialoguer = {version = "0.10", features = ["fuzzy-select"]}
 hex = "0.4"
+rand = "0.8"
 serde = {version = "1.0", features = ["derive"]}
 serde_yaml = "0.9"
 serde_json = "1.0"

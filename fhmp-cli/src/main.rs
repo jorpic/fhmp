@@ -4,6 +4,7 @@ use anyhow::Result;
 mod config;
 mod note;
 mod db;
+mod cmd_new;
 mod cmd_add;
 mod cmd_dump;
 mod cmd_review;
@@ -25,6 +26,7 @@ fn main() -> Result<()> {
     let args: Vec<String> = env::args().collect();
     match args.as_slice() {
         [_, cmd, more_args @ ..] => match &cmd[..] {
+            "new" if more_args.is_empty() => cmd_new::exec(),
             "add" if more_args.is_empty() => cmd_add::exec(),
             "dump" if more_args.is_empty() => cmd_dump::exec(),
             "review" => cmd_review::exec(more_args),
