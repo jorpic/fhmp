@@ -1,7 +1,6 @@
 use anyhow::Result;
 use rand::distributions::{Alphanumeric, DistString};
-use std::fs;
-use std::io;
+use std::{env, fs, io, process};
 
 pub fn exec() -> Result<()> {
     loop {
@@ -9,9 +8,12 @@ pub fn exec() -> Result<()> {
         let res = fs::create_dir(&dir);
         match res {
             Ok(_) => {
+                let readme = format!("./{dir}/readme.md");
+                let reviews = format!("./{dir}/reviews.txt");
                 println!("directory created: ./{}", dir);
-                fs::File::create(format!("./{dir}/readme.md"))?;
-                fs::File::create(format!("./{dir}/reviews.txt"))?;
+                fs::File::create(&readme)?;
+                fs::File::create(&reviews)?;
+                run_editor(readme)?;
                 return Ok(());
             },
             Err(err)
@@ -23,4 +25,13 @@ pub fn exec() -> Result<()> {
 
 fn random_string(len: usize) -> String {
     Alphanumeric.sample_string(&mut rand::thread_rng(), len)
+}
+
+fn run_editor(file: String) -> Result<process::ExitStatus> {
+    let editor = env::var("EDITOR")?;
+    process::Command::new(editor)
+        .arg(file)
+        .spawn()
+        .and_then(|mut c| c.wait())
+        .map_err(|e| e.into())
 }
