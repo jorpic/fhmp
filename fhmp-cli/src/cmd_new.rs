@@ -8,11 +8,10 @@ pub fn exec() -> Result<()> {
         .context("Reading config")?;
 
     let dir = create_new_dir(&cfg.data_path)?;
-    println!("directory created: ./{}", dir.display());
+    println!("directory created: {}", dir.display());
 
     let readme = dir.join("readme.md");
     fs::File::create(&readme)?;
-    fs::File::create(&dir.join("reviews.txt"))?;
     run_editor(&readme)?;
     Ok(())
 }
