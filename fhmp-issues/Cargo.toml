@@ -8,4 +8,6 @@ edition = "2021"
 [dependencies]
 anyhow = "1.0"
 config = { version = "0.13", default-features = false, features = ["toml"] }
+crossterm = "0.27.0"
+ratatui = "0.26.0"
 serde = { version = "1.0.196", features = ["derive"] }
