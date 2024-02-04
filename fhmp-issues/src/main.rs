@@ -1,49 +1,43 @@
-use crossterm::{
-    event::{self, KeyCode, KeyEventKind},
-    terminal,
-    ExecutableCommand,
-};
+use std::panic;
+use std::time::Duration;
 
-use ratatui::{
-    prelude::{CrosstermBackend, Stylize, Terminal},
-    widgets::Paragraph,
-};
 use anyhow::Result;
-use std::io::stdout;
+use crossterm::event::KeyCode;
 
+mod app_state;
 mod config;
+mod tui;
+mod ui;
+
+use app_state::AppState;
 
 fn main() -> Result<()> {
-    // let _conf = config::read_config()?;
+    let app = AppState {
+        config: config::read_config()?
+    };
 
-    stdout().execute(terminal::EnterAlternateScreen)?;
-    terminal::enable_raw_mode()?;
-    let mut term = Terminal::new(CrosstermBackend::new(stdout()))?;
-    term.clear()?;
+    tui::enter_alt_screen()?;
+
+    let panic_hook = panic::take_hook();
+    panic::set_hook(Box::new(move |panic| {
+        tui::exit_alt_screen().expect("failed to exit alt screen");
+        panic_hook(panic);
+    }));
+
+    let mut term = tui::new()?;
+    let event_source = tui::EventSource::start_event_thread(Duration::from_millis(250));
 
     loop {
-         term.draw(|frame| {
-            let area = frame.size();
-            frame.render_widget(
-                Paragraph::new("Hello Ratatui! (press 'q' to quit)")
-                    .white()
-                    .on_blue(),
-                area,
-            );
-        })?;
+        term.draw(|frame| ui::view(&app, frame))?;
 
-        if event::poll(std::time::Duration::from_millis(160))? {
-            if let event::Event::Key(key) = event::read()? {
-                if key.kind == KeyEventKind::Press
-                    && key.code == KeyCode::Char('q')
-                {
-                    break;
-                }
+        if let Ok(ev) = event_source.receiver.recv() {
+            match ev.code {
+                KeyCode::Char('q') => break,
+                _ => {}
             }
         }
     }
 
-    stdout().execute(terminal::LeaveAlternateScreen)?;
-    terminal::disable_raw_mode()?;
+    tui::exit_alt_screen()?;
     Ok(())
 }
