@@ -1,7 +1,8 @@
 use anyhow::{Context, Result};
 use config::{File, FileFormat};
 use serde::Deserialize;
-use std::{env, path::PathBuf};
+use std::env;
+use std::path::PathBuf;
 
 #[derive(Deserialize)]
 pub struct Config {

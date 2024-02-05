@@ -6,15 +6,17 @@ use crossterm::event::KeyCode;
 
 mod app_state;
 mod config;
+mod issues;
 mod tui;
 mod ui;
 
 use app_state::AppState;
+use issues::Issues;
 
 fn main() -> Result<()> {
-    let app = AppState {
-        config: config::read_config()?
-    };
+    let config = config::read_config()?;
+    let issues = Issues::read_from(&config.issues_path)?;
+    let app = AppState { config, issues };
 
     tui::enter_alt_screen()?;
 
