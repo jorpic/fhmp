@@ -55,6 +55,8 @@ fn read_issue(id: IssueId, path: &Path) -> Result<Issue> {
     let header = lines
         .next()
         .context("Issue must have a header")?
+        .trim_start_matches('#')
+        .trim_start_matches(char::is_whitespace)
         .to_string();
     Ok(Issue { id, header, body })
 }
