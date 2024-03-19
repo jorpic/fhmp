@@ -11,7 +11,8 @@ pub struct Config {
 
 pub fn read_config() -> Result<Config> {
     let home = env::var("HOME").context("Get $HOME env var")?;
-    let cfg_path: PathBuf = [&home, ".config", "fhmp", "config.toml"].iter().collect();
+    let cfg_path: PathBuf =
+        [&home, ".config", "fhmp", "config.toml"].iter().collect();
     let cfg_file = File::from(cfg_path).format(FileFormat::Toml).required(true);
     config::Config::builder()
         .add_source(cfg_file)

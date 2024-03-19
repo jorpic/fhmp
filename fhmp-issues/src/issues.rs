@@ -1,5 +1,4 @@
 use anyhow::{Context, Result};
-use std::collections::BTreeMap;
 use std::fs;
 use std::io::Read;
 use std::path::Path;
@@ -12,40 +11,47 @@ pub struct Issue {
     pub body: String,
 }
 
-pub struct Issues {
-    pub all: BTreeMap<IssueId, Result<Issue>>,
+pub struct Error {
+    pub id: IssueId,
+    pub err: anyhow::Error,
 }
 
-impl Issues {
-    pub fn read_from(path: &Path) -> Result<Issues> {
-        let issue_dirs =
-            fs::read_dir(path).with_context(|| format!("Read issues from {:?}", path))?;
+pub type Issues = Vec<Issue>;
+pub type Errors = Vec<Error>;
 
-        let mut issues = BTreeMap::new();
-        for d in issue_dirs {
-            let Ok(d) = d else {
-                continue;
-            };
-            let issue_dir = d.path();
-            if issue_dir.is_file() {
-                continue;
-            }
-            let Some(id) = issue_dir.file_name() else {
-                continue;
-            };
-            let Some(id) = id.to_str() else {
-                continue;
-            };
-            let Ok(id) = IssueId::from_str_radix(id, 10) else {
-                continue;
-            };
-            let issue_path = d.path().join("readme.md");
+pub fn read_issues_from(path: &Path) -> Result<(Issues, Errors)> {
+    let issue_dirs = fs::read_dir(path)
+        .with_context(|| format!("Read issues from {:?}", path))?;
 
-            issues.insert(id, read_issue(id, &issue_path));
+    let mut issues = Vec::new();
+    let mut errors = Vec::new();
+
+    for d in issue_dirs {
+        let Ok(d) = d else {
+            continue;
+        };
+        let issue_dir = d.path();
+        if issue_dir.is_file() {
+            continue;
         }
+        let Some(id) = issue_dir.file_name() else {
+            continue;
+        };
+        let Some(id) = id.to_str() else {
+            continue;
+        };
+        let Ok(id) = IssueId::from_str_radix(id, 10) else {
+            continue;
+        };
+        let issue_path = d.path().join("readme.md");
 
-        Ok(Issues { all: issues })
+        match read_issue(id, &issue_path) {
+            Ok(issue) => issues.push(issue),
+            Err(err) => errors.push(Error { id, err }),
+        }
     }
+
+    Ok((issues, errors))
 }
 
 fn read_issue(id: IssueId, path: &Path) -> Result<Issue> {
