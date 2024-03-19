@@ -1,3 +1,4 @@
+use std::cmp;
 use std::panic;
 use std::time::Duration;
 
@@ -16,7 +17,12 @@ use issues::Issues;
 fn main() -> Result<()> {
     let config = config::read_config()?;
     let issues = Issues::read_from(&config.issues_path)?;
-    let app = AppState { config, issues };
+    let mut app = AppState {
+        config,
+        issues,
+        table_state: Default::default(),
+    };
+    app.table_state.select(Some(0));
 
     tui::enter_alt_screen()?;
 
@@ -30,11 +36,13 @@ fn main() -> Result<()> {
     let event_source = tui::EventSource::start_event_thread(Duration::from_millis(250));
 
     loop {
-        term.draw(|frame| ui::view(&app, frame))?;
+        term.draw(|frame| ui::view(&mut app, frame))?;
 
         if let Ok(ev) = event_source.receiver.recv() {
             match ev.code {
                 KeyCode::Char('q') => break,
+                KeyCode::Char('j') => table_move(&mut app, 1),
+                KeyCode::Char('k') => table_move(&mut app, -1),
                 _ => {}
             }
         }
@@ -42,4 +50,14 @@ fn main() -> Result<()> {
 
     tui::exit_alt_screen()?;
     Ok(())
+}
+
+fn table_move(ts: &mut AppState, delta: isize) {
+    let pos = ts.table_state.selected_mut().get_or_insert(0);
+    let len = ts.issues.all.len();
+    if delta > 0 {
+        *pos = cmp::min(pos.saturating_add_signed(delta), len-1);
+    } else {
+        *pos = cmp::max(pos.saturating_add_signed(delta), 0);
+    }
 }
